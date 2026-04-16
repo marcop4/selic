@@ -74,6 +74,7 @@ def print_header():
     {W}
     {C}[+]{W} Social Engineering List Creator
     {C}[+]{W} Version: 1.0.0
+    {C}[+]{W} Creador:M.A.P.A
     """
     print(banner)
 
