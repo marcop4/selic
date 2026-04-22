@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Archivo de pruebas para social_wordlist.py
-Ejecuta con: python -m unittest test_social_wordlist.py
+Archivo de pruebas para SELIC v1.2.0
+Ejecuta con: python -m unittest test_selic.py
 """
 
 import unittest
@@ -10,7 +10,7 @@ import os
 import tempfile
 
 # Importar funciones del script principal
-from social_wordlist import (
+from selic import (
     validate_date,
     validate_dni,
     validate_length_params,
@@ -24,7 +24,7 @@ from social_wordlist import (
 
 
 class TestSocialWordlist(unittest.TestCase):
-    """Pruebas unitarias para social_wordlist.py"""
+    """Pruebas unitarias para selic.py"""
 
     def test_validate_date_valid(self):
         """Prueba fechas válidas"""
