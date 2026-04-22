@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-<<<<<<< HEAD
 __version__ = "1.2.0"
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 """
 Social engineering wordlist generator for Kali Linux.
 Generates password wordlists from social information, dictionary words, patterns,
@@ -39,49 +36,12 @@ try:
 except ImportError:
     TK_AVAILABLE = False
 
-<<<<<<< HEAD
 from selic_core import *
 
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 DEFAULT_DICT_FILE = "wordlist.txt"
 DEFAULT_OUTPUT_FILE = "passlist.txt"
 DEFAULT_BASE_DIR = ""
 DEFAULT_CONFIG_FILE = "selic.cfg"
-<<<<<<< HEAD
-=======
-DEFAULT_SPECIALS = "!@#$%^&*_+-="
-DEFAULT_DIGITS = "0123456789"
-DEFAULT_DIGIT_SUFFIXES = ["123", "2023", "2024", "007"]
-DEFAULT_LOWER = "abcdefghijklmnñopqrstuvwxyz"
-DEFAULT_UPPER = DEFAULT_LOWER.upper()
-COLOR_BLUE = "\033[38;5;33m"
-COLOR_CYAN = "\033[38;5;51m"
-COLOR_GREEN = "\033[38;5;82m"
-COLOR_YELLOW = "\033[38;5;226m"
-COLOR_ORANGE = "\033[38;5;208m"
-COLOR_MAGENTA = "\033[38;5;201m"
-COLOR_RESET = "\033[0m"
-MAX_TEMPLATE_EXPANSION = 2000000
-
-# Contraseñas comunes estáticas (no se combinan, solo se agregan tal cual)
-COMMON_PASSWORDS = [
-    "123456", "12345678", "123456789", "1234567890", "password", "contraseña",
-    "qwerty", "abc123", "111111", "123123", "admin", "letmein", "welcome",
-    "monkey", "master", "dragon", "login", "princess", "football", "shadow",
-    "sunshine", "trustno1", "iloveyou", "batman", "access", "hello", "charlie",
-    "donald", "password1", "qwerty123", "654321", "555555", "lovely", "7777777",
-    "888888", "000000", "1q2w3e", "1q2w3e4r", "q1w2e3r4", "123qwe", "zxcvbnm",
-    "asdfghjkl", "1qaz2wsx", "password123", "admin123", "root", "toor",
-    "pass", "test", "guest", "changeme", "fuckyou", "jordan", "thomas",
-]
-
-
-def color_text(text, color_code):
-    if not sys.stdout.isatty():
-        return text
-    return f"{color_code}{text}\033[0m"
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
 
 def print_header():
@@ -100,11 +60,7 @@ def print_header():
     {D}╚══════╝╚══════╝╚══════╝╚═╝ ╚═════╝
     {W}
     {C}[+]{W} Social Engineering List Creator
-<<<<<<< HEAD
     {C}[+]{W} Version: 1.2.0
-=======
-    {C}[+]{W} Version: 1.1.0
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     {C}[+]{W} Creador:M.A.P.A
     """
     print(banner)
@@ -124,8 +80,6 @@ def resolve_path(base_dir, file_name):
     return file_name
 
 
-<<<<<<< HEAD
-=======
 def split_words(value):
     tokens = set()
     if not value:
@@ -156,7 +110,6 @@ def parse_multi_values(value):
         return None
     items = [item.strip() for item in re.split(r"[\s,]+", text) if item.strip()]
     return items or None
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
 
 def parse_config_bool(value, default=False):
@@ -175,29 +128,6 @@ def parse_config_int(value, default=None):
         return default
 
 
-<<<<<<< HEAD
-=======
-def validate_date(date_str):
-    """Valida si una fecha tiene formato DD/MM/YYYY o DD-MM-YYYY o solo año."""
-    if not date_str:
-        return False
-    # Solo año: 4 dígitos
-    if re.match(r"^\d{4}$", date_str):
-        year = int(date_str)
-        return 1900 <= year <= 2100  # Rango razonable
-    # Formato DD/MM/YYYY o DD-MM-YYYY
-    match = re.match(r"^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$", date_str)
-    if match:
-        day, month, year = map(int, match.groups())
-        if not (1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2100):
-            return False
-        # Días válidos por mes (simple, sin años bisiestos)
-        days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        return day <= days_in_month[month - 1]
-    return False
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
-
-
 def validate_length_params(min_len, max_len, count):
     """Valida parámetros de longitud."""
     errors = []
@@ -210,27 +140,6 @@ def validate_length_params(min_len, max_len, count):
     if count is not None and count < 1:
         errors.append("Cantidad máxima debe ser al menos 1")
     return errors
-
-
-<<<<<<< HEAD
-=======
-def validate_dni(dni_str):
-    """Valida formato básico de DNI (solo números, longitud razonable)."""
-    if not dni_str:
-        return True  # Vacío es válido
-    if not re.match(r"^\d{6,12}$", dni_str):  # 6-12 dígitos típico
-        return False
-    return True
-
-
-def log_error(message):
-    """Registra errores en un archivo de log opcional."""
-    try:
-        with open("selic_errors.log", "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now().isoformat()} - ERROR: {message}\n")
-    except:
-        pass  # Silencio si no puede escribir log
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
 
 def estimate_wordlist_size(config, social_tokens):
@@ -422,20 +331,14 @@ def parse_args():
     parser.add_argument("--no-leet", dest="leet", action="store_false", help="Desactivar modo leet.")
     parser.set_defaults(leet=True)
     parser.add_argument("--complexity", type=int, choices=[1, 2, 3, 4, 5], default=2, help="Nivel de complejidad de generación (1=básico, 5=máximo).")
-<<<<<<< HEAD
     parser.add_argument("--agresividad", type=int, choices=[1, 2, 3, 4], default=4, help="Nivel de agresividad/profundidad (1=básico, 4=fuerza bruta ordenada).")
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     parser.add_argument("--decompose-numbers", action="store_true", help="Descomponer números en fragmentos solo para años/documentos. El diccionario numérico no se divide.")
     parser.add_argument("--max-ram", type=int, default=3, help="RAM máxima en GB para deduplicación en memoria (default: 3).")
     parser.add_argument("--config", default=DEFAULT_CONFIG_FILE, help="Archivo de configuración externa con valores predeterminados.")
     parser.add_argument("--gui", action="store_true", help="Abrir interfaz gráfica básica si está disponible.")
     parser.add_argument("-i", "--interactive", action="store_true", help="Forzar modo interactivo por terminal, similar a cupp -i.")
     parser.add_argument("--setup", action="store_true", help="Abrir asistente para configurar los valores predeterminados de forma interactiva.")
-<<<<<<< HEAD
     parser.add_argument("--force-extreme", action="store_true", help="Forzar combinaciones extremas ignorando el límite de seguridad (puede generar archivos gigantes).")
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
     args = parser.parse_args()
     return args
@@ -466,7 +369,6 @@ def prompt_interactive(defaults=None):
         print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_birth))}")
     print("    Si son varias fechas/años, sepáralas con espacios o comas.")
     print(f"    Ej: {color_text('08/04/2005', COLOR_ORANGE)}, {color_text('2010', COLOR_ORANGE)} o {color_text('2005', COLOR_ORANGE)}")
-<<<<<<< HEAD
     while True:
         birth_input = input("    > ").strip()
         if not birth_input:
@@ -480,22 +382,12 @@ def prompt_interactive(defaults=None):
             continue
         params["birth_year"] = vals
         break
-=======
-    birth_input = input("    > ").strip()
-    params["birth_year"] = parse_multi_values(birth_input) if birth_input else None
-    if params["birth_year"]:
-        invalid_dates = [d for d in params["birth_year"] if not validate_date(d)]
-        if invalid_dates:
-            print(color_text(f"Fechas inválidas detectadas: {', '.join(invalid_dates)}. Se usarán de todos modos, pero revisa el formato.", COLOR_MAGENTA))
-            log_error(f"Fechas inválidas en birth_year: {invalid_dates}")
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print_question("03", "Otra(s) fecha(s) importante(s) de la persona objetivo (DD/MM/YYYY, DD-MM-YYYY o solo año)")
     default_year = defaults.get("year")
     if default_year is not None:
         print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_year))}")
     print("    Si son varias fechas/años, sepáralas con espacios o comas.")
     print(f"    Ej: {color_text('14/02/2010', COLOR_ORANGE)}, {color_text('2022', COLOR_ORANGE)} o {color_text('2010', COLOR_ORANGE)}")
-<<<<<<< HEAD
     while True:
         year_input = input("    > ").strip()
         if not year_input:
@@ -509,15 +401,6 @@ def prompt_interactive(defaults=None):
             continue
         params["year"] = vals
         break
-=======
-    year_input = input("    > ").strip()
-    params["year"] = parse_multi_values(year_input) if year_input else None
-    if params["year"]:
-        invalid_dates = [d for d in params["year"] if not validate_date(d)]
-        if invalid_dates:
-            print(color_text(f"Fechas inválidas detectadas: {', '.join(invalid_dates)}. Se usarán de todos modos, pero revisa el formato.", COLOR_MAGENTA))
-            log_error(f"Fechas inválidas en year: {invalid_dates}")
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print_question("04", "Nombre del papá/mamá u otro familiar cercano")
     default_family_name = defaults.get("family_name")
     if default_family_name is not None:
@@ -531,7 +414,6 @@ def prompt_interactive(defaults=None):
     if default_family_years is not None:
         print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_family_years))}")
     print("    Si son varias fechas/años, sepáralas con espacios o comas.")
-<<<<<<< HEAD
     while True:
         family_years_input = input("    > ").strip()
         if not family_years_input:
@@ -545,22 +427,12 @@ def prompt_interactive(defaults=None):
             continue
         params["family_years"] = vals
         break
-=======
-    family_years_input = input("    > ").strip()
-    params["family_years"] = parse_multi_values(family_years_input) if family_years_input else None
-    if params["family_years"]:
-        invalid_dates = [d for d in params["family_years"] if not validate_date(d)]
-        if invalid_dates:
-            print(color_text(f"Fechas inválidas detectadas: {', '.join(invalid_dates)}. Se usarán de todos modos, pero revisa el formato.", COLOR_MAGENTA))
-            log_error(f"Fechas inválidas en family_years: {invalid_dates}")
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print_question("06", "DNI o documento de la persona objetivo")
     default_dni = defaults.get("dni")
     if default_dni is not None:
         print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_dni))}")
     else:
         print("    ENTER = omitir")
-<<<<<<< HEAD
     while True:
         user_input = input("    > ").strip()
         if not user_input:
@@ -572,37 +444,21 @@ def prompt_interactive(defaults=None):
         params["dni"] = user_input
         break
     print_question("07", "Descomponer fechas en fragmentos? (s/n) [n]")
-    print(color_text("    ⚠ IMPACTO ALTO: Aumenta exponencialmente las permutaciones si hay muchas fechas.", COLOR_ORANGE))
-=======
-    user_input = input("    > ").strip()
-    params["dni"] = user_input if user_input else None
-    if params["dni"] and not validate_dni(params["dni"]):
-        print(color_text(f"DNI inválido: '{params['dni']}'. Debe ser 6-12 dígitos numéricos.", COLOR_MAGENTA))
-        log_error(f"DNI inválido: {params['dni']}")
-    print_question("07", "Descomponer fechas en fragmentos? (s/n) [n]")
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print("    ENTER = no")
     print("    Se extraen siempre día, mes y año de fechas como 08/04/2005.")
     print("    Si no descompones, aún se usarán 08, 8, 04, 4, 2005 y 0804.")
     print("    La opción solo agrega fragmentos adicionales como 20, 05, 200, 005.")
     params["decompose_number_dates"] = yes_no_input("    > ", default="n")
     print_question("08", "Descomponer el documento de identidad en fragmentos? (s/n) [n]")
-<<<<<<< HEAD
     print(color_text("    ⚠ IMPACTO MEDIO: Multiplica las palabras base extraídas del DNI.", COLOR_YELLOW))
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print("    ENTER = no")
     print("    Se aplica solo al DNI/documento")
     params["decompose_number_document"] = yes_no_input("    > ", default="n")
     params["decompose_numbers"] = params["decompose_number_dates"] or params["decompose_number_document"]
-<<<<<<< HEAD
-    
     print_question("08-B", "¿Generar también versiones sin tildes/acentos? (Recomendado) (s/n) [s]")
     print(color_text("    ⚠ IMPACTO ALTO: Duplica el tamaño de la base para nombres con tilde (José -> Jose).", COLOR_ORANGE))
     print("    La letra 'ñ' y 'Ñ' siempre se conservará intacta.")
     params["remove_accents_flag"] = yes_no_input("    > ", default="s")
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print_question("09", "Información adicional del objetivo")
     print("    Escribe cualquier dato relevante de la persona objetivo:")
     print(f"    {color_text('color favorito, equipo/deporte, ciudad, mascota, cantante,', COLOR_CYAN)}")
@@ -723,12 +579,9 @@ def prompt_interactive(defaults=None):
     default_specials = defaults.get("specials", True)
     params["specials"] = yes_no_input("    ¿Agregar variaciones CON SÍMBOLOS? (s/n) [s]: ", default="s" if default_specials else "n")
     print()
-<<<<<<< HEAD
     default_separators = defaults.get("use_separators", False)
     params["use_separators"] = yes_no_input("    ¿Usar SEPARADORES (_, ., -) para unir palabras base? (s/n) [n]: ", default="s" if default_separators else "n")
     print()
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print("    Sufijos numéricos personalizados (opcional):")
     print("    ENTER = usar por defecto (123, 2023, 2024, 007)")
     print("    Si quieres otros, escríbelos separados por comas: 1234, 2025, 999")
@@ -740,11 +593,7 @@ def prompt_interactive(defaults=None):
     params["leet"] = yes_no_input("    > ", default="s" if defaults.get("leet", True) else "n")
     if params["leet"]:
         print("    Max letras a reemplazar por token (1-20).")
-<<<<<<< HEAD
         print("    " + color_text("⚠ IMPACTO ALTO: Valores altos multiplican drásticamente las combinaciones.", COLOR_ORANGE))
-=======
-        print("    " + color_text("⚠ Cuidado:", COLOR_YELLOW) + " Valores altos aumentan drásticamente las combinaciones y consumo de RAM.")
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
         print("    10 es suficiente para cubrir el 99.9% de contraseñas humanas complejas.")
         print(f"    ENTER = {color_text('8', COLOR_GREEN)}")
         params["max_leet_replacements"] = safe_int_input("    > ", 8, min_value=1, max_value=20)
@@ -758,7 +607,6 @@ def prompt_interactive(defaults=None):
     print(f"    {color_text('5', COLOR_CYAN)} = mezcla máxima de tamaños, símbolos y números.")
     print(f"    {color_text('ENTER = 2', COLOR_GREEN)}")
     params["complexity"] = safe_int_input("    Nivel de complejidad 1-5 [2]: ", 2, min_value=1, max_value=5)
-<<<<<<< HEAD
     print_question("19", "Nivel de Mezcla (profundidad de combinación)")
     comp = params["complexity"]
     default_mezcla = 3 if comp >= 5 else (2 if comp >= 3 else 1)
@@ -793,12 +641,6 @@ def prompt_interactive(defaults=None):
     print("    Nota: Más RAM evita lentitud al guardar diccionarios gigantes (Ej: Nivel 4).")
     print("    Si tu diccionario es pequeño (Nivel 1 o 2), usar 3GB o 10GB será igual de rápido.")
     print("    (SELIC no ocupará toda la RAM de golpe, es solo un límite máximo permitido).")
-=======
-    print_question("19", "RAM máxima para deduplicación (en GB)")
-    print(f"    ENTER = {color_text('3', COLOR_GREEN)} GB")
-    print("    Más RAM = más candidatos deduplicados en memoria (más rápido).")
-    print("    Si se excede, se auto-deduplica al final sin perder datos.")
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     params["max_ram"] = safe_int_input("    > ", 3, min_value=1, max_value=32)
     print("\nResumen rápido:")
     print(f"  {color_text('Salida:', COLOR_YELLOW)} {color_text(params['output_file'], COLOR_CYAN)}")
@@ -813,10 +655,7 @@ def prompt_interactive(defaults=None):
     if params["patterns"]:
         print(f"  {color_text('Patrones:', COLOR_YELLOW)} {color_text(', '.join(params['patterns']), COLOR_ORANGE)}")
     print(f"  {color_text('Modo leet:', COLOR_YELLOW)} {color_text('Sí' if params.get('leet') else 'No', COLOR_GREEN if params.get('leet') else COLOR_ORANGE)}")
-<<<<<<< HEAD
     print(f"  {color_text('Separadores:', COLOR_YELLOW)} {color_text('Sí' if params.get('use_separators') else 'No', COLOR_GREEN if params.get('use_separators') else COLOR_ORANGE)}")
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     date_decompose = params.get("decompose_number_dates")
     doc_decompose = params.get("decompose_number_document")
     if date_decompose is None and doc_decompose is None:
@@ -824,11 +663,8 @@ def prompt_interactive(defaults=None):
     print(f"  {color_text('Descomponer fechas:', COLOR_YELLOW)} {'Sí' if date_decompose else 'No'}")
     print(f"  {color_text('Descomponer documento:', COLOR_YELLOW)} {'Sí' if doc_decompose else 'No'}")
     print(f"  {color_text('Complejidad:', COLOR_YELLOW)} {color_text(str(params.get('complexity', 2)), COLOR_GREEN)}")
-<<<<<<< HEAD
     print(f"  {color_text('Agresividad:', COLOR_YELLOW)} {color_text(str(params.get('agresividad', 4)), COLOR_GREEN)}")
     print(f"  {color_text('Mezcla:', COLOR_YELLOW)} {color_text(str(params.get('mezcla', 'auto')), COLOR_GREEN)}")
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     print(f"  {color_text('RAM dedup:', COLOR_YELLOW)} {color_text(str(params.get('max_ram', 3)) + ' GB', COLOR_GREEN)}")
     print("Pulsa ENTER si quieres continuar con la generación...")
     input("")
@@ -836,7 +672,6 @@ def prompt_interactive(defaults=None):
 
 
 def yes_no_input(prompt, default="n"):
-<<<<<<< HEAD
     while True:
         answer = input(prompt).strip().lower()
         if not answer:
@@ -857,34 +692,12 @@ def safe_int_input(prompt, default, min_value=None, max_value=None):
             print(color_text("[!] Error: Debes ingresar un número entero válido.", COLOR_MAGENTA))
             continue
         if min_value is not None and value < min_value:
-            print(color_text(f"[!] Error: El valor no puede ser menor a {min_value}.", COLOR_MAGENTA))
+            print(color_text(f"[!] Error: El value no puede ser menor a {min_value}.", COLOR_MAGENTA))
             continue
         if max_value is not None and value > max_value:
-            print(color_text(f"[!] Error: El valor no puede ser mayor a {max_value}.", COLOR_MAGENTA))
+            print(color_text(f"[!] Error: El value no puede ser mayor a {max_value}.", COLOR_MAGENTA))
             continue
         return value
-=======
-    answer = input(prompt).strip().lower()
-    if not answer:
-        answer = default.lower()
-    return answer.startswith("s") or answer.startswith("y")
-
-
-def safe_int_input(prompt, default, min_value=None, max_value=None):
-    text = input(prompt).strip()
-    if not text:
-        return default
-    try:
-        value = int(text)
-    except ValueError:
-        print("Valor no válido, se usa el valor por defecto.")
-        return default
-    if min_value is not None and value < min_value:
-        return min_value
-    if max_value is not None and value > max_value:
-        return max_value
-    return value
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
 
 def run_gui(args):
@@ -1241,34 +1054,7 @@ def _generate_token_variants(base, options, max_length):
                         yield candidate3
 
 
-<<<<<<< HEAD
 # La función generate_combination_variants se ha movido a selic_core.py
-=======
-def generate_combination_variants(tokens, options, count_limit=None, max_length=16):
-    tokens = [t for t in tokens if t]
-    if not tokens:
-        return
-    # Limitar profundidad de permutación según cantidad de tokens
-    # para evitar explosión combinatoria: P(50,3) = 117,600 vs P(50,2) = 2,450
-    num_tokens = len(tokens)
-    if num_tokens > 80:
-        max_combo = 1  # Solo tokens individuales (>80 tokens = ya hay suficientes)
-    elif num_tokens > 30:
-        max_combo = 2  # Parejas máximo (P(50,2) = 2,450 bases, manejable)
-    else:
-        max_combo = min(3, num_tokens)  # Tríos solo con pocos tokens
-    yielded = 0
-    for length in range(1, max_combo + 1):
-        for subset in itertools.permutations(tokens, length):
-            base_candidate = "".join(subset)
-            if len(base_candidate) > max_length:
-                continue
-            for candidate in _generate_token_variants(base_candidate, options, max_length):
-                yield candidate
-                yielded += 1
-                if count_limit and yielded >= count_limit:
-                    return
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
 
 def filter_by_length_and_complexity(candidates, min_length, max_length, options):
@@ -1588,10 +1374,7 @@ def build_config_from_args(args, defaults=None):
         "max_leet_replacements": getattr(args, "max_leet_replacements", defaults.get("max_leet_replacements", 8)),
         "digit_suffixes": parse_multi_values(args.digit_suffixes) or defaults.get("digit_suffixes"),
         "complexity": args.complexity if args.complexity is not None else defaults.get("complexity", 2),
-<<<<<<< HEAD
         "agresividad": getattr(args, "agresividad", defaults.get("agresividad", 4)),
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
         "decompose_numbers": args.decompose_numbers or defaults.get("decompose_numbers", False),
         "max_ram": args.max_ram if args.max_ram is not None else defaults.get("max_ram", 3),
     }
@@ -1684,20 +1467,16 @@ def main():
         "complexity": config.get("complexity", 2),
         "birth_year": config.get("birth_year"),
         "leet_mappings": config.get("leet_mappings"),
-<<<<<<< HEAD
         "force_extreme": getattr(args, "force_extreme", False),
         "remove_accents_flag": config.get("remove_accents_flag", True),
         "use_separators": config.get("use_separators", False),
         "allow_extreme_generation": config.get("allow_extreme_generation", False),
         "extreme_generation_limit": config.get("extreme_generation_limit", 5000000000)
-=======
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
     }
     base_tokens, numeric_parts = collect_social_tokens(config, dictionary_words, options)
     options["numeric_parts"] = numeric_parts
     char_pool = build_char_pool(config.get("hash_mode", "all"), base_tokens, options)
 
-<<<<<<< HEAD
     print(color_text(f"[*] Base de palabras identificadas: {len(base_tokens)}", COLOR_CYAN))
     
     is_interactive = args.interactive or len(sys.argv) == 1
@@ -1708,12 +1487,6 @@ def main():
         show_pre_generation_summary(len(base_tokens), force_max_combo, options, is_interactive)
     else:
         force_max_combo = check_and_prompt_limits(len(base_tokens), options, is_interactive)
-=======
-    estimated_size = estimate_wordlist_size(config, base_tokens)
-    print(f"Estimación de contraseñas a generar: {color_text(str(estimated_size), COLOR_CYAN)} (aproximado)")
-    if estimated_size > 1000000:
-        print(color_text("Advertencia: La estimación supera 1 millón. Puede tomar tiempo o generar un archivo grande.", COLOR_MAGENTA))
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
     stop_event = threading.Event()
     total_estimate = "calculando..."
@@ -1734,14 +1507,9 @@ def main():
             candidate_iterables.append(pattern_candidates)
 
         if config.get("count") is None or True:
-<<<<<<< HEAD
             agr = config.get("agresividad", 4)
             for t in range(1, agr + 1):
                 candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, config.get("count"), config["max_length"]))
-=======
-            combo_candidates = generate_combination_variants(base_tokens, options, config.get("count"), config["max_length"])
-            candidate_iterables.append(combo_candidates)
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 
         if not config.get("patterns") and not config_has_social_info(config):
             print(color_text("No se proporcionó información de ingeniería social ni patrones. Se generará contenido básico desde el diccionario.", COLOR_MAGENTA))

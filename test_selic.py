@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 """
-<<<<<<< HEAD
 Archivo de pruebas para SELIC v1.2.0
-=======
-Archivo de pruebas para selic.py
->>>>>>> d8918307b9a99716543fe47c061b23c5a9771bf3
 Ejecuta con: python -m unittest test_selic.py
 """
 
