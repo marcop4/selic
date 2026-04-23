@@ -166,7 +166,7 @@ class SelicGUI:
             f.pack(fill="x", pady=2)
             ttk.Checkbutton(f, text=text, variable=var, style="TCheckbutton").pack(side="left")
             tk.Button(f, text="?", command=lambda t=help_txt: messagebox.showinfo("Ayuda", t),
-                      bg="#222", fg=self.muted_color, font=("Segoe UI", 7, "bold"), relief="flat", bd=0, padx=5).pack(side="right")
+                      bg="#222", fg=self.muted_color, font=("Segoe UI", 7, "bold"), relief="flat", bd=0).pack(side="right", padx=5)
 
         # SECCIÓN 2: MEDIDOR DE GRAVEDAD (TERMÓMETRO)
         diag_card = ttk.Frame(main_container, style="Card.TFrame", padding=15)
@@ -196,8 +196,8 @@ class SelicGUI:
         tk.Button(p_head, text="?", command=self.show_pattern_help, bg="#222", fg=self.accent_color, relief="flat", bd=0).pack(side="right")
         
         self.pattern_text = tk.Text(patt_card, height=2, bg="#000", fg=self.accent_color, 
-                                   insertbackground="white", font=("Consolas", 10), relief="flat", padx=10, pady=5)
-        self.pattern_text.pack(fill="x", pady=(5, 0))
+                                   insertbackground="white", font=("Consolas", 10), relief="flat")
+        self.pattern_text.pack(fill="x", pady=(5, 0), padx=10)
         self.pattern_text.insert("1.0", "#%?#")
 
         # SECCIÓN 4: SALIDA DE ARCHIVO
@@ -210,11 +210,11 @@ class SelicGUI:
         
         self.output_path_var = tk.StringVar(value=os.path.join(os.getcwd(), "selic_wordlist.txt"))
         self.output_entry = tk.Entry(out_f, textvariable=self.output_path_var, bg="#000", fg="#aaa", 
-                                    relief="flat", font=("Segoe UI", 9), padx=10)
-        self.output_entry.pack(side="left", fill="x", expand=True, pady=5)
+                                    relief="flat", font=("Segoe UI", 9))
+        self.output_entry.pack(side="left", fill="x", expand=True, pady=5, padx=10)
         
         tk.Button(out_f, text="Buscador", command=self.browse_output, bg="#222", fg=self.accent_color,
-                  relief="flat", font=("Segoe UI", 9), padx=15).pack(side="right", padx=(5, 0))
+                  relief="flat", font=("Segoe UI", 9)).pack(side="right", padx=(15, 0))
 
         # FOOTER
         footer = ttk.Frame(self.root, padding=(30, 10, 30, 20))
@@ -230,8 +230,8 @@ class SelicGUI:
         
         self.gen_btn = tk.Button(footer, text="GENERAR WORDLIST", command=self.start_thread,
                                 bg=self.accent_color, fg="black", font=("Segoe UI", 12, "bold"),
-                                relief="flat", padx=40, pady=12, cursor="hand2")
-        self.gen_btn.pack(side="right")
+                                relief="flat", cursor="hand2")
+        self.gen_btn.pack(side="right", padx=40, pady=12)
         
         count_frame = ttk.Frame(info_line)
         count_frame.pack(side="right", padx=20)
