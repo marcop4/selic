@@ -509,14 +509,24 @@ def get_projected_level(max_combo, options):
     comp = options.get("complexity", 2)
     leet = options.get("leet", False)
     specials = options.get("specials", False)
+    digits = options.get("digits", False)
     
-    if max_combo >= 3 or comp >= 4:
-        return 4
-    if leet or comp >= 3:
-        return 3
-    if specials or max_combo >= 2:
-        return 2
-    return 1
+    # Sistema de puntos para una evaluación holística
+    # Mezcla (max_combo) es el factor con más peso
+    score = max_combo * 1.5
+    if leet: score += 1
+    if specials: score += 1
+    if digits: score += 0.5
+    # Complejidad suma gradualmente
+    score += (comp - 1) * 0.5
+    
+    if score >= 7:
+        return 4   # Social Extreme
+    if score >= 4.5:
+        return 3   # Social Deep
+    if score >= 2.5:
+        return 2   # Social Medium
+    return 1       # Social Lite
 
 def _combo_name(level):
     """Devuelve el nombre legible de un nivel de agresividad."""

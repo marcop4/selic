@@ -130,27 +130,42 @@ class SelicGUI:
         self.max_len_ent.delete(0, "end"); self.max_len_ent.insert(0, "32")
         self.max_len_ent.pack(side="left", padx=5)
 
-        # Complejidad y Mezcla (Nuevos)
+        # Complejidad, Sufijos y Mezcla
         adv_f = ttk.Frame(settings_card, style="Card.TFrame")
         adv_f.pack(fill="x", pady=5)
         
-        ttk.Label(adv_f, text="Complejidad:", style="Card.TLabel").pack(side="left")
-        self.comp_combo = ttk.Combobox(adv_f, values=["1 (Básico)", "2 (Normal)", "3 (Alto)", "4 (Muy Alto)", "5 (Extremo)"], width=12, state="readonly")
+        # Fila Complejidad
+        f_comp = ttk.Frame(adv_f, style="Card.TFrame")
+        f_comp.pack(fill="x", pady=2)
+        ttk.Label(f_comp, text="Complejidad:", style="Card.TLabel").pack(side="left")
+        self.comp_combo = ttk.Combobox(f_comp, values=["1 (Básico)", "2 (Normal)", "3 (Alto)", "4 (Muy Alto)", "5 (Extremo)"], width=12, state="readonly")
         self.comp_combo.current(1)
         self.comp_combo.pack(side="left", padx=5)
         self.comp_combo.bind("<<ComboboxSelected>>", lambda e: self.update_diagnostic())
+        tk.Button(f_comp, text="?", command=self.show_complexity_help, bg="#222", fg=self.muted_color, 
+                  font=("Segoe UI", 7, "bold"), relief="flat", bd=0).pack(side="left", padx=2)
 
-        ttk.Label(adv_f, text="Anclas:", style="Card.TLabel").pack(side="left", padx=(10, 0))
-        self.anchors_ent = tk.Entry(adv_f, bg="#222", fg=self.accent_color, insertbackground="white", 
+        # Fila Sufijos
+        f_suf = ttk.Frame(adv_f, style="Card.TFrame")
+        f_suf.pack(fill="x", pady=2)
+        ttk.Label(f_suf, text="Sufijos:", style="Card.TLabel").pack(side="left")
+        self.anchors_ent = tk.Entry(f_suf, bg="#222", fg=self.accent_color, insertbackground="white", 
                                    relief="flat", width=15, font=("Segoe UI", 9))
         self.anchors_ent.pack(side="left", padx=5)
         self.anchors_ent.bind("<KeyRelease>", lambda e: self.update_diagnostic())
+        tk.Button(f_suf, text="?", command=self.show_suffixes_help, bg="#222", fg=self.muted_color, 
+                  font=("Segoe UI", 7, "bold"), relief="flat", bd=0).pack(side="left", padx=2)
 
-        ttk.Label(adv_f, text="Mezcla:", style="Card.TLabel").pack(side="left", padx=(10, 0))
-        self.mezcla_combo = ttk.Combobox(adv_f, values=["Auto", "1 (Sueltas)", "2 (Parejas)", "3 (Tríos)", "4 (Cuartetos)"], width=11, state="readonly")
+        # Fila Mezcla
+        f_mez = ttk.Frame(adv_f, style="Card.TFrame")
+        f_mez.pack(fill="x", pady=2)
+        ttk.Label(f_mez, text="Mezcla:", style="Card.TLabel").pack(side="left")
+        self.mezcla_combo = ttk.Combobox(f_mez, values=["Auto", "1 (Sueltas)", "2 (Parejas)", "3 (Tríos)", "4 (Cuartetos)"], width=11, state="readonly")
         self.mezcla_combo.current(0)
         self.mezcla_combo.pack(side="left", padx=5)
         self.mezcla_combo.bind("<<ComboboxSelected>>", lambda e: self.update_diagnostic())
+        tk.Button(f_mez, text="?", command=self.show_mixing_help, bg="#222", fg=self.muted_color, 
+                  font=("Segoe UI", 7, "bold"), relief="flat", bd=0).pack(side="left", padx=2)
 
         checks = [
             ("Minúsculas", self.lower_var, "Permite usar letras minúsculas."),
@@ -279,6 +294,31 @@ class SelicGUI:
                "3. MEDIDOR: Observa los bloques. Si llega al ROJO, la wordlist será enorme pero muy efectiva.\n"
                "4. GENERAR: Elige la ruta y espera a que el sistema termine.")
         messagebox.showinfo("Ayuda SELIC", msg)
+
+    def show_complexity_help(self):
+        msg = ("NIVELES DE COMPLEJIDAD\n\n"
+               "1: Básico. Solo variaciones simples.\n"
+               "2: Normal. Incluye símbolos dobles (!!, @@).\n"
+               "3: Alto. Leet Speak multi-carácter, reversos y mayúsculas alternas.\n"
+               "4: Muy Alto. Añade sufijos automáticos como '!2024'.\n"
+               "5: Extremo. Cruces exhaustivos entre símbolos y números.")
+        messagebox.showinfo("Ayuda: Complejidad", msg)
+
+    def show_suffixes_help(self):
+        msg = ("SUFIJOS PERSONALIZADOS\n\n"
+               "Escribe palabras o números separados por coma.\n"
+               "Se pegarán al principio y al final de cada contraseña.\n"
+               "Ejemplo: SH, 2025, !")
+        messagebox.showinfo("Ayuda: Sufijos", msg)
+
+    def show_mixing_help(self):
+        msg = ("NIVELES DE MEZCLA (PROFUNDIDAD)\n\n"
+               "1: Palabras sueltas.\n"
+               "2: Parejas de palabras (Ej: NombreApellido).\n"
+               "3: Tríos de palabras (Ej: NombreApellidoHobby).\n"
+               "4: Cuartetos (¡Cuidado! Generación muy pesada).\n\n"
+               "Auto: El sistema elige según la complejidad seleccionada.")
+        messagebox.showinfo("Ayuda: Mezcla", msg)
 
     def show_pattern_help(self):
         msg = ("GUÍA DE PATRONES QUIRÚRGICOS\n\n"
