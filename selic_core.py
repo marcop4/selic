@@ -505,28 +505,36 @@ def _format_estimate(n):
         return f"~{n/1_000_000_000:.1f} billones"
 
 def get_projected_level(max_combo, options):
-    """Determina a qué nivel heurístico (int) equivalen los ajustes manuales."""
+    """Determina el nivel de gravedad de forma inteligente según el conjunto de ajustes."""
     comp = options.get("complexity", 2)
     leet = options.get("leet", False)
     specials = options.get("specials", False)
     digits = options.get("digits", False)
     
-    # Sistema de puntos para una evaluación holística
-    # Mezcla (max_combo) es el factor con más peso
-    score = max_combo * 1.5
-    if leet: score += 1
-    if specials: score += 1
-    if digits: score += 0.5
-    # Complejidad suma gradualmente
-    score += (comp - 1) * 0.5
-    
-    if score >= 7:
-        return 4   # Social Extreme
-    if score >= 4.5:
-        return 3   # Social Deep
-    if score >= 2.5:
-        return 2   # Social Medium
-    return 1       # Social Lite
+    # 1. CASO EXTREMO (Nivel 4):
+    # Requiere mezcla profunda (4+) O (mezcla 3+ Y alta complejidad Y transformaciones activas)
+    if max_combo >= 4:
+        return 4
+    if max_combo >= 3 and comp >= 4 and (leet or specials):
+        return 4
+
+    # 2. CASO AVANZADO (Nivel 3):
+    # Requiere al menos una transformación mayor (Leet o Símbolos) Y mezcla 2+
+    # O mezcla 3 con complejidad alta.
+    if (max_combo >= 2 and (leet or specials)) or (max_combo >= 3 and comp >= 3):
+        # FILTRO INTELIGENTE: Si no hay NADA de variedad (ni números, ni símbolos, ni leet),
+        # no puede ser Avanzado, se degrada a Intermedio.
+        if not leet and not specials and not digits:
+            return 2
+        return 3
+
+    # 3. CASO INTERMEDIO (Nivel 2):
+    # Cualquier mezcla de 2, o uso de transformaciones básicas, o complejidad media.
+    if max_combo >= 2 or leet or specials or digits or comp >= 3:
+        return 2
+
+    # 4. CASO BÁSICO (Nivel 1):
+    return 1
 
 def _combo_name(level):
     """Devuelve el nombre legible de un nivel de agresividad."""
