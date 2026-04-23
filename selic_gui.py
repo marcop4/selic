@@ -16,7 +16,7 @@ class SelicGUI:
     def __init__(self, root):
         self.root = root
         self.root.title(f"SELIC v{__version__} - Panel de Control Unificado")
-        self.root.geometry("950x820")
+        self.root.geometry("950x720")
         self.root.configure(bg="#0a0a0a")
         self.root.resizable(False, False)
         
@@ -68,7 +68,9 @@ class SelicGUI:
         self.complexity_val = tk.IntVar(value=2)
 
     def create_widgets(self):
-        # SECCIÓN: HEADER (ARRIBA)
+        # --- ESTRUCTURA PRINCIPAL (HEADER Y FOOTER FIJOS) ---
+        
+        # 1. HEADER (ARRIBA)
         header = ttk.Frame(self.root, padding=(30, 20, 30, 10))
         header.pack(side="top", fill="x")
         ttk.Label(header, text="SELIC", style="Header.TLabel").pack(side="left")
@@ -77,7 +79,7 @@ class SelicGUI:
         tk.Button(header, text="?", command=self.show_main_help, bg="#161616", fg=self.accent_color, 
                   font=("Segoe UI", 11, "bold"), relief="flat", width=3, bd=0, cursor="hand2").pack(side="right")
 
-        # SECCIÓN: FOOTER (ABAJO) - Lo empaquetamos antes que el centro para que sea fijo
+        # 2. FOOTER (ABAJO)
         footer = ttk.Frame(self.root, padding=(30, 5, 30, 10))
         footer.pack(side="bottom", fill="x")
         
@@ -90,7 +92,6 @@ class SelicGUI:
         self.status_label = ttk.Label(info_line, text="SISTEMA LISTO", foreground=self.accent_color, font=("Segoe UI", 9, "bold"))
         self.status_label.pack(side="left", pady=10)
         
-        # Botón de generar en la misma línea que el estatus
         self.gen_btn = tk.Button(info_line, text="GENERAR WORDLIST", command=self.start_thread,
                                 bg=self.accent_color, fg="black", font=("Segoe UI", 11, "bold"),
                                 relief="flat", cursor="hand2", padx=20)
@@ -101,8 +102,34 @@ class SelicGUI:
         ttk.Label(count_frame, textvariable=self.generated_count, font=("Segoe UI", 10, "bold")).pack(side="left")
         ttk.Label(count_frame, text=" contraseñas", foreground=self.muted_color).pack(side="left")
 
-        # SECCIÓN: CONTENEDOR CENTRAL (OCUPA EL RESTO)
-        main_container = ttk.Frame(self.root, padding=(30, 0, 30, 10))
+        # 3. ÁREA SCROLLABLE (CENTRO)
+        container = ttk.Frame(self.root)
+        container.pack(fill="both", expand=True)
+
+        self.canvas = tk.Canvas(container, bg=self.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.canvas.yview)
+        self.scrollable_frame = ttk.Frame(self.canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        
+        # Ajustar ancho del frame interno al canvas
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Soporte para rueda del ratón
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # --- CONTENIDO DE LOS AJUSTES (Dentro de scrollable_frame) ---
+        main_container = ttk.Frame(self.scrollable_frame, padding=(30, 0, 30, 10))
         main_container.pack(fill="both", expand=True)
 
         # SECCIÓN 1: DATOS (COL IZQUIERDA) Y AJUSTES (COL DERECHA)
@@ -300,6 +327,14 @@ class SelicGUI:
                "4. GENERAR: Elige la ruta y espera a que el sistema termine.")
         messagebox.showinfo("Ayuda SELIC", msg)
 
+    def _on_canvas_configure(self, event):
+        # Ajustar el ancho del frame interno para que coincida con el canvas
+        self.canvas.itemconfig(self.canvas_window, width=event.width)
+
+    def _on_mousewheel(self, event):
+        # Scroll con la rueda del ratón
+        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
     def show_complexity_help(self):
         msg = ("NIVELES DE COMPLEJIDAD\n\n"
                "1: Básico. Solo variaciones simples.\n"
@@ -439,7 +474,7 @@ class SelicGUI:
 if __name__ == "__main__":
     root = tk.Tk()
     # Centrar en pantalla
-    w, h = 950, 820
+    w, h = 950, 720
     x = (root.winfo_screenwidth()/2) - (w/2)
     y = (root.winfo_screenheight()/2) - (h/2)
     root.geometry(f"{w}x{h}+{int(x)}+{int(y)}")
