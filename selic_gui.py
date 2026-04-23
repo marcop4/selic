@@ -16,7 +16,7 @@ class SelicGUI:
     def __init__(self, root):
         self.root = root
         self.root.title(f"SELIC v{__version__} - Panel de Control Unificado")
-        self.root.geometry("900x780")
+        self.root.geometry("900x850")
         self.root.configure(bg="#0a0a0a")
         self.root.resizable(False, False)
         
@@ -68,15 +68,38 @@ class SelicGUI:
         self.complexity_val = tk.IntVar(value=2)
 
     def create_widgets(self):
-        # Header
+        # SECCIÓN: HEADER (ARRIBA)
         header = ttk.Frame(self.root, padding=(30, 20, 30, 10))
-        header.pack(fill="x")
+        header.pack(side="top", fill="x")
         ttk.Label(header, text="SELIC", style="Header.TLabel").pack(side="left")
         ttk.Label(header, text="V1.2.0", foreground=self.muted_color, font=("Segoe UI", 10, "bold")).pack(side="left", padx=10, pady=(12, 0))
         
         tk.Button(header, text="?", command=self.show_main_help, bg="#161616", fg=self.accent_color, 
                   font=("Segoe UI", 11, "bold"), relief="flat", width=3, bd=0, cursor="hand2").pack(side="right")
 
+        # SECCIÓN: FOOTER (ABAJO) - Lo empaquetamos antes que el centro para que sea fijo
+        footer = ttk.Frame(self.root, padding=(30, 10, 30, 20))
+        footer.pack(side="bottom", fill="x")
+        
+        self.progress_bar = ttk.Progressbar(footer, variable=self.progress_val, maximum=100, style="Horizontal.TProgressbar")
+        self.progress_bar.pack(fill="x", pady=(0, 10))
+        
+        info_line = ttk.Frame(footer)
+        info_line.pack(fill="x")
+        self.status_label = ttk.Label(info_line, text="SISTEMA LISTO", foreground=self.accent_color, font=("Segoe UI", 9, "bold"))
+        self.status_label.pack(side="left")
+        
+        self.gen_btn = tk.Button(footer, text="GENERAR WORDLIST", command=self.start_thread,
+                                bg=self.accent_color, fg="black", font=("Segoe UI", 12, "bold"),
+                                relief="flat", cursor="hand2")
+        self.gen_btn.pack(side="right", padx=40, pady=12)
+        
+        count_frame = ttk.Frame(info_line)
+        count_frame.pack(side="right", padx=20)
+        ttk.Label(count_frame, textvariable=self.generated_count, font=("Segoe UI", 10, "bold")).pack(side="left")
+        ttk.Label(count_frame, text=" contraseñas", foreground=self.muted_color).pack(side="left")
+
+        # SECCIÓN: CONTENEDOR CENTRAL (OCUPA EL RESTO)
         main_container = ttk.Frame(self.root, padding=(30, 0, 30, 10))
         main_container.pack(fill="both", expand=True)
 
@@ -230,28 +253,6 @@ class SelicGUI:
         
         tk.Button(out_f, text="Buscador", command=self.browse_output, bg="#222", fg=self.accent_color,
                   relief="flat", font=("Segoe UI", 9)).pack(side="right", padx=(15, 0))
-
-        # FOOTER
-        footer = ttk.Frame(self.root, padding=(30, 10, 30, 20))
-        footer.pack(side="bottom", fill="x")
-        
-        self.progress_bar = ttk.Progressbar(footer, variable=self.progress_val, maximum=100, style="Horizontal.TProgressbar")
-        self.progress_bar.pack(fill="x", pady=(0, 10))
-        
-        info_line = ttk.Frame(footer)
-        info_line.pack(fill="x")
-        self.status_label = ttk.Label(info_line, text="SISTEMA LISTO", foreground=self.accent_color, font=("Segoe UI", 9, "bold"))
-        self.status_label.pack(side="left")
-        
-        self.gen_btn = tk.Button(footer, text="GENERAR WORDLIST", command=self.start_thread,
-                                bg=self.accent_color, fg="black", font=("Segoe UI", 12, "bold"),
-                                relief="flat", cursor="hand2")
-        self.gen_btn.pack(side="right", padx=40, pady=12)
-        
-        count_frame = ttk.Frame(info_line)
-        count_frame.pack(side="right", padx=20)
-        ttk.Label(count_frame, textvariable=self.generated_count, font=("Segoe UI", 10, "bold")).pack(side="left")
-        ttk.Label(count_frame, text=" contraseñas", foreground=self.muted_color).pack(side="left")
 
     def update_diagnostic(self, *args):
         # 1. Obtener parámetros actuales de la UI
@@ -434,7 +435,7 @@ class SelicGUI:
 if __name__ == "__main__":
     root = tk.Tk()
     # Centrar en pantalla
-    w, h = 900, 780
+    w, h = 900, 850
     x = (root.winfo_screenwidth()/2) - (w/2)
     y = (root.winfo_screenheight()/2) - (h/2)
     root.geometry(f"{w}x{h}+{int(x)}+{int(y)}")
