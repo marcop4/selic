@@ -108,6 +108,12 @@ class SelicGUI:
             ent.bind("<KeyRelease>", lambda e: self.update_diagnostic())
             self.entries[key] = ent
 
+        # COL 2: SETTINGS
+        settings_card = ttk.Frame(top_grid, style="Card.TFrame", padding=15)
+        settings_card.grid(row=0, column=1, sticky="nsew")
+        top_grid.columnconfigure(0, weight=1)
+        top_grid.columnconfigure(1, weight=1)
+
         ttk.Label(settings_card, text="CONFIGURACIÓN TÉCNICA", style="Sub.TLabel").pack(anchor="w", pady=(0, 10))
         
         # Grid para controles numéricos
