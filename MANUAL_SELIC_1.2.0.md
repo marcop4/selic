@@ -16,10 +16,12 @@ Dependiendo de tu sistema operativo, el comando puede variar:
 #### En Windows:
 *   **Modo Interactivo (Recomendado):** `py selic.py -i`
 *   **Modo Mini (Rápido):** `py selic_mini.py`
+*   **Modo GUI (Visual):** `py selic_gui.py`
 
 #### En Linux / Mac:
 *   **Modo Interactivo (Recomendado):** `python3 selic.py -i`
 *   **Modo Mini (Rápido):** `python3 selic_mini.py`
+*   **Modo GUI (Visual):** `python3 selic_gui.py`
 
 *Nota: El flag `-i` es fundamental en `selic.py` para activar el asistente de preguntas. Si no lo pones, el programa esperará argumentos por línea de comandos.*
 
@@ -61,10 +63,23 @@ Si durante la generación tu disco llega a tener menos de **5 GB libres**, SELIC
 
 ---
 
-## ⚙️ 5. El "Termómetro" y el Estimador
-En el modo manual de `selic.py`, verás un **Nivel Proyectado**. 
-*   Si tus ajustes manuales equivalen a un ataque masivo, el termómetro se pondrá en **Nivel 4 (Extremo)**. 
-*   El estimador de tiempo y cantidad tiene un margen de seguridad del 10%, por lo que la cifra que veas suele ser un poco más alta de lo que realmente terminará siendo, dándote un margen de maniobra real.
+## ⚙️ 5. El "Medidor de Gravedad" y Diagnóstico Inteligente
+En la versión 1.2.0-BETA, SELIC actúa como un copiloto experto:
+
+### A. Diagnóstico Dinámico (CLI)
+Cuando terminas de ingresar datos, SELIC analiza la complejidad de tus ajustes y te recomienda un **Nivel de Agresividad**. 
+*   No tienes que adivinar: el sistema te dirá si tu configuración es "Social Medium" o "Extreme".
+*   El formato `[S/n]` ahora resalta en verde el valor predeterminado sugerido.
+
+### B. Medidor de Bloques (GUI)
+La interfaz gráfica incluye un indicador de 4 bloques (estilo batería):
+*   **Verde**: Nivel 1 - Ataque rápido y seguro.
+*   **Amarillo**: Nivel 2 - Ataque estándar asistido.
+*   **Naranja**: Nivel 3 - Ataque profundo de ingeniería social.
+*   **Rojo**: Nivel 4 - Ataque crítico/exhaustivo (Wordlist muy pesada).
+
+### C. Patrones en Modo Mini
+Incluso en `selic_mini.py`, ahora tienes acceso a la tabla de marcadores (#, %, @, ,, ?, \) para crear estructuras fijas con datos sociales integrados.
 
 ---
 
@@ -75,4 +90,4 @@ Puedes personalizar todo el comportamiento:
 *   **`leet_mappings`**: Cambia qué letras se reemplazan por qué números.
 
 ---
-*Manual actualizado para la versión 1.2.0 Oficial - Seguridad y Precisión Quirúrgica.*
+*Manual actualizado para la versión 1.2.0-BETA - Diagnóstico Asistido y Estética Cyber-Dark.*

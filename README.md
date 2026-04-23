@@ -1,7 +1,13 @@
-# SELIC v1.2.0 🚀
-### Social Engineering Wordlist Generator (Quirúrgico & Seguro)
+# SELIC v1.2.0
+**Social Engineering List Creator** - Generador Quirúrgico de Wordlists Asistido por Diagnóstico.
 
-**SELIC** (Social Engineering Wordlist Generator) es una herramienta avanzada diseñada para auditores de seguridad y especialistas en Ingeniería Social. A diferencia de los generadores de fuerza bruta convencionales, SELIC utiliza un motor heurístico que replica la **psicología humana** en la creación de contraseñas, permitiendo generar diccionarios extremadamente precisos y efectivos.
+SELIC es un motor de ingeniería social avanzado diseñado para penetrar defensas basadas en la psicología del usuario. A diferencia de los generadores aleatorios, SELIC analiza los datos del objetivo y recomienda el nivel de ataque óptimo mediante un sistema de **Diagnóstico Dinámico**.
+
+### 🌟 Novedades de la v1.2.0-BETA:
+- **Diagnóstico Asistido**: El sistema detecta automáticamente la "Gravedad" de tu ataque y te sugiere el mejor nivel de agresividad.
+- **Medidor de Gravedad Visual (GUI)**: Nueva interfaz Cyber-Dark con indicador de 4 bloques de colores (Verde -> Rojo).
+- **Potencia Universal**: Ahora el modo Mini, el CLI normal y la GUI comparten el mismo motor de Patrones Avanzados y lógica de mezcla.
+- **Estándar Profesional**: Implementación de flujos interactivos con valores predeterminados inteligentes `[S/n]`.
 
 ---
 

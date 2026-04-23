@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 __version__ = "1.2.0"
-"""
+r"""
 Social engineering wordlist generator for Kali Linux.
 Generates password wordlists from social information, dictionary words, patterns,
 mutations, permutations and complexity levels.
 
 Usage examples:
-  python3 selic.py --name "Juan" --color "rojo" --birth-year 1995 \
-    --dni 12345678 --min-length 8 --max-length 16 --pattern "7###C" \
+  python3 selic.py --name "Juan" --color "rojo" --pattern "IV#%?CO" \
     --output wordlist.txt
 
-  python3 selic.py
+Patrones Avanzados (Crunch-style):
+  # -> Datos Sociales (lo que tú ingreses)
+  % -> Números (0-9)
+  @ -> Letras minúsculas (a-z)
+  , -> Letras mayúsculas (A-Z)
+  ? -> Símbolos especiales (!@#$...)
+  \ -> Escape (ej: \# para un '#' literal)
 
 If no arguments are provided, the script enters interactive mode.
 """
@@ -37,6 +42,7 @@ except ImportError:
     TK_AVAILABLE = False
 
 from selic_core import *
+from selic_core import _combo_name, get_projected_level, show_pre_generation_summary, show_impact_comparison
 
 DEFAULT_DICT_FILE = "wordlist.txt"
 DEFAULT_OUTPUT_FILE = "passlist.txt"
@@ -80,36 +86,6 @@ def resolve_path(base_dir, file_name):
     return file_name
 
 
-def split_words(value):
-    tokens = set()
-    if not value:
-        return tokens
-    value = str(value).strip()
-    for chunk in re.split(r"[\s,_\-\/\.]+", value):
-        if not chunk:
-            continue
-        tokens.add(chunk)
-        camel_parts = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+", chunk)
-        for part in camel_parts:
-            if part:
-                tokens.add(part)
-    return tokens
-
-
-def parse_multi_values(value):
-    if value is None:
-        return None
-    if isinstance(value, list):
-        items = []
-        for part in value:
-            if part:
-                items.extend([item.strip() for item in re.split(r"[\s,]+", part) if item.strip()])
-        return items or None
-    text = str(value).strip()
-    if not text:
-        return None
-    items = [item.strip() for item in re.split(r"[\s,]+", text) if item.strip()]
-    return items or None
 
 
 def parse_config_bool(value, default=False):
@@ -197,16 +173,18 @@ def estimate_wordlist_size(config, social_tokens):
     if base_count > 10:
         token_combinations += min(base_count // 10, 3)  # Tokens de 3 elementos (muy limitado)
     
-    # Patrones
+    # Patrones (Cálculo exacto para los nuevos marcadores)
     pattern_count = 0
     patterns = config.get("patterns", [])
     if patterns:
+        social_size = len(social_tokens) or 10  # Fallback si no hay tokens
+        MARKER_SIZES = {"#": social_size, "%": 10, "@": 26, ",": 26, "?": 30}
         for pattern in patterns:
-            hashes = pattern.count("#")
-            if hashes:
-                char_pool_size = 30  # Aproximado (letras + dígitos)
-                pattern_count += min(char_pool_size ** hashes, 10000)
-        pattern_count = min(pattern_count, 50000)
+            combos = 1
+            for char in pattern:
+                if char in MARKER_SIZES:
+                    combos *= MARKER_SIZES[char]
+            pattern_count += combos
     
     # Filtro de longitud: muchas se pierden
     max_len = config.get("max_length", 32)
@@ -264,6 +242,7 @@ def load_config_defaults(config_path):
             "digit_suffixes": parse_multi_values(sec.get("digit_suffixes")),
             "decompose_numbers": parse_config_bool(sec.get("decompose_numbers"), False),
             "max_ram": parse_config_int(sec.get("max_ram"), 3),
+            "max_template_expansion": parse_config_int(sec.get("max_template_expansion"), 100000000),
         }
     leet_mappings = {}
     if config.has_section("leet"):
@@ -316,10 +295,10 @@ def parse_args():
     parser.add_argument("--dict", default=DEFAULT_DICT_FILE, help="Archivo de diccionario base opcional (.txt). Si no existe o se omite, se genera desde datos sociales.")
     parser.add_argument("--output", default=DEFAULT_OUTPUT_FILE, help="Archivo de salida para la wordlist.")
     parser.add_argument("--base-dir", default=DEFAULT_BASE_DIR, help="Directorio base para el diccionario y el archivo de salida.")
-    parser.add_argument("--pattern", action="append", help="Plantilla/patrón como 7###C, ###@2026, Nombre##!.")
-    parser.add_argument("--digit-suffixes", action="append", help="Lista personal de sufijos numéricos separados por comas o espacios. Se agregan a los sufijos por defecto. Ej: 1234, 2025, 999")
+    parser.add_argument("--pattern", action="append", help="Plantilla personalizada. Marcadores: # (Social), % (Núm), @ (min), , (MAY), ? (Símb). Ej: IV#%?CO")
+    parser.add_argument("--digit-suffixes", "--extra", action="append", help="Sufijos/Prefijos personalizados (letras, números o símbolos).")
     parser.add_argument("--hash-mode", choices=["letters", "digits", "specials", "all", "base"], default="all",
-                        help="Carácter que reemplaza '#' en patrones: letters=letras, digits=números, specials=símbolos, all=todo, base=caracteres asignados.")
+                        help="Reemplazo global de '#' si no se usan marcadores avanzados.")
     parser.add_argument("--min-length", type=int, default=4, help="Longitud mínima de las contraseñas.")
     parser.add_argument("--max-length", type=int, default=32, help="Longitud máxima de las contraseñas.")
     parser.add_argument("--count", type=int, help="Número máximo de contraseñas a generar.")
@@ -344,35 +323,41 @@ def parse_args():
     return args
 
 
+
 def prompt_interactive(defaults=None):
     defaults = defaults or {}
     print_header()
-    print("Modo interactivo de SELIC")
+    print(color_text("=== MODO INTERACTIVO DE INGENIERÍA SOCIAL ===", COLOR_CYAN))
+    print(color_text("💡 Tip: Los valores entre CORCHETES [ ] son los predeterminados.", COLOR_YELLOW))
+    print(color_text("   Si presionas ENTER sin escribir nada, SELIC usará lo que esté dentro de [ ].", COLOR_YELLOW))
+    print(color_text("   En opciones (s/n), la letra MAYÚSCULA indica la elección automática.", COLOR_YELLOW))
+    print(color_text("   (Ej: [S/n] -> ENTER es SÍ | [s/N] -> ENTER es NO).", COLOR_YELLOW))
+    print("-------------------------------------------------------------------------")
     print("Datos objetivo — responde solo lo que conozcas.")
-    print("  • Para ayuda completa: python selic.py --help")
     print("  • ENTER omite la pregunta")
-    print("  • Usa skip si quieres saltar un campo")
     print("  • Separa valores con espacios o comas")
-    print("--------------------------------------------------------")
+    print("-------------------------------------------------------------------------")
     params = {}
     print_question("01", "Nombre completo / alias de la persona objetivo")
     default_name = defaults.get("name")
     if default_name is not None:
-        print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_name))}")
+        print(f"    ENTER = usar [{color_text(default_name, COLOR_GREEN)}] | Ej: Marco Antonio")
     else:
         print("    ENTER = omitir | Ej: Marco Antonio")
     user_input = input("    > ").strip()
-    params["name"] = user_input if user_input else None
+    params["name"] = user_input if user_input else default_name
     print_question("02", "Fecha(s) de nacimiento de la persona objetivo (DD/MM/YYYY, DD-MM-YYYY o solo año)")
     default_birth = defaults.get("birth_year")
     if default_birth is not None:
-        print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_birth))}")
+        print(f"    ENTER = usar [{color_text(str(default_birth), COLOR_GREEN)}] | Separa con comas")
+    else:
+        print("    ENTER = omitir | Ej: 08/04/2005, 2010")
     print("    Si son varias fechas/años, sepáralas con espacios o comas.")
     print(f"    Ej: {color_text('08/04/2005', COLOR_ORANGE)}, {color_text('2010', COLOR_ORANGE)} o {color_text('2005', COLOR_ORANGE)}")
     while True:
         birth_input = input("    > ").strip()
         if not birth_input:
-            params["birth_year"] = None
+            params["birth_year"] = default_birth
             break
         vals = parse_multi_values(birth_input)
         invalid_dates = [d for d in vals if not validate_date(d)]
@@ -401,15 +386,33 @@ def prompt_interactive(defaults=None):
             continue
         params["year"] = vals
         break
-    print_question("04", "Nombre del papá/mamá u otro familiar cercano")
+
+    print_question("04", "DNI o documento de identidad")
+    print("    (Puedes incluir letras si el documento de tu país las usa).")
+    default_dni = defaults.get("dni")
+    if default_dni is not None:
+        print(f"    ENTER = usar [{color_text(default_dni, COLOR_GREEN)}] | Ej: 12345678A")
+    else:
+        print("    ENTER = omitir | Ej: 12345678A")
+    while True:
+        user_input = input("    > ").strip()
+        if not user_input:
+            params["dni"] = default_dni
+            break
+        if not validate_dni(user_input):
+            print(color_text(f"    [!] Error: Documento inválido (4-15 caracteres alfanuméricos).", COLOR_MAGENTA))
+            continue
+        params["dni"] = user_input
+        break
+    print_question("05", "Nombre del papá/mamá u otro familiar cercano")
     default_family_name = defaults.get("family_name")
     if default_family_name is not None:
         print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_family_name))}")
     else:
         print("    (Ej: Juan, María, hermano, hermana) | ENTER = omitir")
     user_input = input("    > ").strip()
-    params["family_name"] = user_input if user_input else None
-    print_question("05", "Fecha(s) de nacimiento de padres o hermanos (DD/MM/YYYY, DD-MM-YYYY o solo año)")
+    params["family_name"] = user_input if user_input else default_family_name
+    print_question("06", "Fecha(s) de nacimiento de padres o hermanos (DD/MM/YYYY, DD-MM-YYYY o solo año)")
     default_family_years = defaults.get("family_years")
     if default_family_years is not None:
         print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_family_years))}")
@@ -427,39 +430,18 @@ def prompt_interactive(defaults=None):
             continue
         params["family_years"] = vals
         break
-    print_question("06", "DNI o documento de la persona objetivo")
-    default_dni = defaults.get("dni")
-    if default_dni is not None:
-        print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_dni))}")
-    else:
-        print("    ENTER = omitir")
-    while True:
-        user_input = input("    > ").strip()
-        if not user_input:
-            params["dni"] = None
-            break
-        if not validate_dni(user_input):
-            print(color_text(f"    [!] Error: DNI inválido. Debe ser de 6 a 12 dígitos numéricos.", COLOR_MAGENTA))
-            continue
-        params["dni"] = user_input
-        break
-    print_question("07", "Descomponer fechas en fragmentos? (s/n) [n]")
-    print("    ENTER = no")
-    print("    Se extraen siempre día, mes y año de fechas como 08/04/2005.")
-    print("    Si no descompones, aún se usarán 08, 8, 04, 4, 2005 y 0804.")
-    print("    La opción solo agrega fragmentos adicionales como 20, 05, 200, 005.")
+    print_question("07", f"¿Descomponer fechas en fragmentos? [{color_text('s/N', COLOR_GREEN)}]")
+    print("    Se extraen día, mes y año de fechas (08/04/2005 -> 08, 04, 2005, 0804).")
+    print("    La opción agrega fragmentos adicionales como 20, 05, 200, 005.")
     params["decompose_number_dates"] = yes_no_input("    > ", default="n")
-    print_question("08", "Descomponer el documento de identidad en fragmentos? (s/n) [n]")
+    print_question("08", f"¿Descomponer el documento de identidad en fragmentos? [{color_text('s/N', COLOR_GREEN)}]")
     print(color_text("    ⚠ IMPACTO MEDIO: Multiplica las palabras base extraídas del DNI.", COLOR_YELLOW))
-    print("    ENTER = no")
-    print("    Se aplica solo al DNI/documento")
     params["decompose_number_document"] = yes_no_input("    > ", default="n")
     params["decompose_numbers"] = params["decompose_number_dates"] or params["decompose_number_document"]
-    print_question("08-B", "¿Generar también versiones sin tildes/acentos? (Recomendado) (s/n) [s]")
-    print(color_text("    ⚠ IMPACTO ALTO: Duplica el tamaño de la base para nombres con tilde (José -> Jose).", COLOR_ORANGE))
-    print("    La letra 'ñ' y 'Ñ' siempre se conservará intacta.")
+    print_question("09", f"¿Generar versiones sin tildes/acentos? [{color_text('S/n', COLOR_GREEN)}]")
+    print(color_text("    ⚠ IMPACTO ALTO: Duplica el tamaño para nombres con tilde (José -> Jose).", COLOR_ORANGE))
     params["remove_accents_flag"] = yes_no_input("    > ", default="s")
-    print_question("09", "Información adicional del objetivo")
+    print_question("10", "Información adicional del objetivo")
     print("    Escribe cualquier dato relevante de la persona objetivo:")
     print(f"    {color_text('color favorito, equipo/deporte, ciudad, mascota, cantante,', COLOR_CYAN)}")
     print(f"    {color_text('empresa, hobby, apodo, nickname, universidad, etc.', COLOR_CYAN)}")
@@ -472,7 +454,50 @@ def prompt_interactive(defaults=None):
             break
         others.extend(parse_multi_values(extra) or [])
     params["other"] = others or None
-    # Campos individuales no usados en interactivo (se manejan via --cli)
+    # Lógica inteligente de mayúsculas/minúsculas en cascada (con descarte)
+    print_question("11", f"¿Mezclar mayúsculas y minúsculas? [{color_text('S/n', COLOR_GREEN)}]")
+    mix_case = yes_no_input("    > ", default="s")
+    if mix_case:
+        params["lower"] = True
+        params["upper"] = True
+    else:
+        print_question("11-B", f"¿Usar SOLO minúsculas? [{color_text('S/n', COLOR_GREEN)}]")
+        only_lower = yes_no_input("    > ", default="s")
+        if only_lower:
+            params["lower"] = True
+            params["upper"] = False
+        else:
+            # Descarte inteligente para evitar lista vacía
+            print(color_text("    (!) Se usarán SOLO MAYÚSCULAS por descarte.", COLOR_YELLOW))
+            params["lower"] = False
+            params["upper"] = True
+
+    print_question("12", f"¿Incluir dígitos automáticos (sufijos)? [{color_text('S/n', COLOR_GREEN)}]")
+    params["digits"] = yes_no_input("    > ", default="s")
+
+    print_question("12-B", "Prefijos / Sufijos personalizados (Anclas)")
+    print("    Escribe letras, números o símbolos que quieras pegar al inicio/final de CADA palabra.")
+    print("    Ej: SH, PRO, !, 2025 (Separa con comas)")
+    print(f"    ENTER = {color_text('ninguno', COLOR_GREEN)}")
+    extra_input = input("    > ").strip()
+    params["digit_suffixes"] = parse_multi_values(extra_input) if extra_input else None
+
+    print_question("13", f"¿Incluir caracteres especiales? [{color_text('s/N', COLOR_GREEN)}]")
+    params["specials"] = yes_no_input("    > ", default="n")
+
+    print_question("14", f"¿Usar separadores (_, ., -) entre palabras? [{color_text('s/N', COLOR_GREEN)}]")
+    params["use_separators"] = yes_no_input("    > ", default="n")
+
+    print_question("15", f"¿Activar modo Leet Speak (a=4, e=3...)? [{color_text('s/N', COLOR_GREEN)}]")
+    params["leet"] = yes_no_input("    > ", default="n")
+    if params["leet"]:
+        print("    ¿Límite de mutaciones Leet por palabra? (1-20) [8]")
+        print("    " + color_text("    ⚠ IMPACTO ALTO: Valores altos multiplican drásticamente las combinaciones.", COLOR_ORANGE))
+        print("    10 es suficiente para cubrir el 99.9% de contraseñas humanas complejas.")
+        print(f"    ENTER = {color_text('8', COLOR_GREEN)}")
+        params["max_leet_replacements"] = safe_int_input("    > ", 8, min_value=1, max_value=20)
+    else:
+        params["max_leet_replacements"] = 8
     params["color"] = None
     params["team"] = None
     params["birth_place"] = None
@@ -480,11 +505,11 @@ def prompt_interactive(defaults=None):
     params["pet"] = None
     params["singer"] = None
     params["dict_file"] = None
-    print_question("10", "Archivo de salida")
+    print_question("16", "Archivo de salida")
     default_output = defaults.get("output_file") or DEFAULT_OUTPUT_FILE
     print(f"    ENTER = {color_text(default_output, COLOR_GREEN)}")
     params["output_file"] = input("    > ").strip() or default_output
-    print_question("11", "Directorio base para los archivos")
+    print_question("17", "Directorio base para los archivos")
     default_base = defaults.get("base_dir")
     if default_base is not None:
         print(f"    ENTER = actual | predeterminado: {get_default_label(format_default_value(default_base))}")
@@ -506,38 +531,48 @@ def prompt_interactive(defaults=None):
             if retry != "r":
                 params["base_dir"] = None
                 break
-    print_question("12", "Usar plantillas/patrones con #? (s/n) [n]")
-    print("    ENTER = no")
-    print(f"    Ej: {color_text('7###C', COLOR_ORANGE)}, {color_text('###@2026', COLOR_ORANGE)}, {color_text('Nombre##!', COLOR_ORANGE)}")
-    print("    Cada # es un marcador de posición que se reemplaza por un solo carácter.")
-    print("    El patrón se completa carácter por carácter.")
-    print("    No se toma un grupo de # como una palabra o fragmento entero.")
+    print_question("18", "¿Usar patrones avanzados? (#, %, @, ,, ?) [s/N]")
+    print(f"    Ejemplos: {color_text('7###C', COLOR_ORANGE)}, {color_text('###@2026', COLOR_ORANGE)}, {color_text('Nombre##!', COLOR_ORANGE)}")
+    print("    Cada marcador (#, %, @, ,, ?) es un marcador de posición que se reemplaza por un solo carácter.")
+    print("    El patrón se completa carácter por carácter (estilo Crunch).")
+    print("    No se toma un grupo de marcadores como una palabra o fragmento entero.")
     print(f"    Ej: {color_text('7####E', COLOR_ORANGE)} => 7 + 4 caracteres + E.")
-    print("    Si quieres usar un dato literal, escríbelo directamente: 7MarcoE")
+    print("    Si quieres usar un dato literal (ej: un nombre), escríbelo directamente: 7MarcoE")
+    print("\n    Marcadores disponibles:")
+    print(f"      {color_text('#', COLOR_CYAN)} : Datos sociales (tus nombres, años, etc.)")
+    print(f"      {color_text('%', COLOR_CYAN)} : Números (0-9)")
+    print(f"      {color_text('@', COLOR_CYAN)} : Letras minúsculas (a-z)")
+    print(f"      {color_text(',', COLOR_CYAN)} : Letras MAYÚSCULAS (A-Z)")
+    print(f"      {color_text('?', COLOR_CYAN)} : Símbolos especiales (!@#$...)")
+    print(f"      {color_text('\\', COLOR_CYAN)} : Carácter literal (ej: \\# para un '#' real)")
+    
     use_patterns = yes_no_input("    > ", default="n")
     patterns = []
     if use_patterns:
-        print("    - Usa # para reemplazar con letras/dígitos/símbolos según la opción de hash.")
-        print("    - Ejemplos: 7###C, ###@2026, Nombre##!, Password###")
+        print("\n    " + color_text("--- LEYENDA DE MARCADORES ---", COLOR_CYAN))
+        print(f"    {color_text('#', COLOR_CYAN)} : Tus datos sociales  | {color_text('%', COLOR_CYAN)} : Números (0-9)")
+        print(f"    {color_text('@', COLOR_CYAN)} : Minúsculas (a-z)    | {color_text(',', COLOR_CYAN)} : MAYÚSCULAS (A-Z)")
+        print(f"    {color_text('?', COLOR_CYAN)} : Símbolos (!@#$...)  | {color_text('\\', COLOR_CYAN)} : Literal (ej: \\#)")
+        print("    -----------------------------\n")
+        
         while True:
-            print("    Plantilla/patrón [ENTER = terminar]:")
-            patt = input("    ").strip()
+            print("    Ingresa patrón [ENTER para terminar]:")
+            patt = input("    > ").strip()
             if not patt:
                 break
             patterns.append(patt)
-        params["patterns"] = patterns or None
-        print("    Modo de # para las plantillas: letters, digits, specials, all, base")
-        print(f"    - {color_text('letters', COLOR_CYAN)}: solo letras (a-z, A-Z)")
-        print(f"    - {color_text('digits', COLOR_CYAN)}: solo números (0-9)")
-        print(f"    - {color_text('specials', COLOR_CYAN)}: solo símbolos (!@#$%^&*_+-=)")
-        print(f"    - {color_text('all', COLOR_CYAN)}: letras, números y símbolos")
-        print(f"    - {color_text('base', COLOR_CYAN)}: caracteres de tus datos sociales (nombres, años, etc.)")
-        print("    ENTER = all")
-        params["hash_mode"] = input("    > ").strip() or "all"
+        
+        if patterns:
+            params["patterns"] = patterns
+            params["hash_mode"] = "base"
+        else:
+            print(color_text("    [!] No ingresaste patrones. Continuando sin ellos...", COLOR_ORANGE))
+            params["patterns"] = None
+            params["hash_mode"] = "all"
     else:
         params["patterns"] = None
         params["hash_mode"] = "all"
-    print_question("13", "Longitud de las contraseñas:")
+    print_question("19", "Longitud de las contraseñas:")
     print("    - Se basa en el número de caracteres de cada contraseña generada.")
     print(f"    - Por defecto {color_text('4-32', COLOR_GREEN)} para combinar datos sociales con números y símbolos.")
     print("    - Ajusta según lo que esperes, puedes usar 1 si necesitas contraseñas muy cortas.")
@@ -548,99 +583,63 @@ def prompt_interactive(defaults=None):
         for error in errors:
             print(color_text(error, COLOR_MAGENTA))
         log_error(f"Errores en longitudes: {errors}")
-    print_question("14", "Cantidad máxima de contraseñas")
+    print_question("20", "Cantidad máxima de contraseñas")
     params["count"] = safe_int_input(f"    ENTER = {color_text('ilimitado', COLOR_GREEN)} | > ", None)
     if params["count"] is not None and params["count"] < 1:
         print(color_text("Cantidad máxima debe ser al menos 1.", COLOR_MAGENTA))
         log_error(f"Cantidad inválida: {params['count']}")
-    print_question("15", "Letras")
-    print("    ENTER = mezcla de mayúsculas y minúsculas")
-    mixed_case = yes_no_input("    ¿Deseas usar mayúsculas y minúsculas en las combinaciones? (s/n) [s]: ", default="s")
-    print()
-    if mixed_case:
-        params["lower"] = True
-        params["upper"] = True
-    else:
-        params["lower"] = yes_no_input("    ¿Usar solo minúsculas? (s/n) [n]: ", default="n")
-        params["upper"] = yes_no_input("    ¿Usar solo mayúsculas? (s/n) [n]: ", default="n")
-        if not params["lower"] and not params["upper"]:
-            print("    No se seleccionó ninguna opción de mayúsculas/minúsculas, se usará mezcla de ambas.")
-            params["lower"] = True
-            params["upper"] = True
-    print_question("16", "Dígitos y especiales")
-    print()
-    print("    Las 'variaciones' son transformaciones del nombre/datos que añaden:")
-    print("    • Con dígitos: nombre + números (ej: 'Marco' → 'Marco123', 'Marco2002', etc.)")
-    print("    • Con símbolos: nombre + caracteres especiales (ej: 'Marco' → 'Marco!', 'Marco@', etc.)")
-    print()
-    default_digits = defaults.get("digits", True)
-    params["digits"] = yes_no_input("    ¿Agregar variaciones CON DÍGITOS? (s/n) [s]: ", default="s" if default_digits else "n")
-    print()
-    default_specials = defaults.get("specials", True)
-    params["specials"] = yes_no_input("    ¿Agregar variaciones CON SÍMBOLOS? (s/n) [s]: ", default="s" if default_specials else "n")
-    print()
-    default_separators = defaults.get("use_separators", False)
-    params["use_separators"] = yes_no_input("    ¿Usar SEPARADORES (_, ., -) para unir palabras base? (s/n) [n]: ", default="s" if default_separators else "n")
-    print()
-    print("    Sufijos numéricos personalizados (opcional):")
-    print("    ENTER = usar por defecto (123, 2023, 2024, 007)")
-    print("    Si quieres otros, escríbelos separados por comas: 1234, 2025, 999")
-    custom_suffixes = input("    > ").strip()
-    params["digit_suffixes"] = parse_multi_values(custom_suffixes) if custom_suffixes else None
-    print_question("17", "Modo leet")
-    print(f"    Reemplaza letras como {color_text('a=4', COLOR_CYAN)}, {color_text('e=3', COLOR_CYAN)}, {color_text('o=0', COLOR_CYAN)}, {color_text('i=1', COLOR_CYAN)}, {color_text('s=$', COLOR_CYAN)}.")
-    print("    ENTER = sí (puedes responder s/n)")
-    params["leet"] = yes_no_input("    > ", default="s" if defaults.get("leet", True) else "n")
-    if params["leet"]:
-        print("    Max letras a reemplazar por token (1-20).")
-        print("    " + color_text("⚠ IMPACTO ALTO: Valores altos multiplican drásticamente las combinaciones.", COLOR_ORANGE))
-        print("    10 es suficiente para cubrir el 99.9% de contraseñas humanas complejas.")
-        print(f"    ENTER = {color_text('8', COLOR_GREEN)}")
-        params["max_leet_replacements"] = safe_int_input("    > ", 8, min_value=1, max_value=20)
-    else:
-        params["max_leet_replacements"] = 8
-    print_question("18", "Complejidad:")
-    print(f"    {color_text('1', COLOR_CYAN)} = solo datos básicos y poca mezcla.")
-    print(f"    {color_text('2', COLOR_CYAN)} = agrega mayúsculas/minúsculas y sufijos simples.")
-    print(f"    {color_text('3', COLOR_CYAN)} = agrega reversos, mutaciones y más variantes.")
-    print(f"    {color_text('4', COLOR_CYAN)} = agrega símbolos y fechas adicionales.")
-    print(f"    {color_text('5', COLOR_CYAN)} = mezcla máxima de tamaños, símbolos y números.")
-    print(f"    {color_text('ENTER = 2', COLOR_GREEN)}")
-    params["complexity"] = safe_int_input("    Nivel de complejidad 1-5 [2]: ", 2, min_value=1, max_value=5)
-    print_question("19", "Nivel de Mezcla (profundidad de combinación)")
-    comp = params["complexity"]
-    default_mezcla = 3 if comp >= 5 else (2 if comp >= 3 else 1)
-    print(f"    {color_text('1', COLOR_CYAN)} = Individual: cada palabra sola (rápido, menos contraseñas).")
-    print(f"    {color_text('2', COLOR_CYAN)} = Parejas: combina 2 palabras (equilibrado).")
-    print(f"    {color_text('3', COLOR_CYAN)} = Tríos: combina 3 palabras (lento, máxima cobertura).")
-    print(f"    {color_text('4', COLOR_CYAN)} = Cuartetos: combina 4 palabras (extremo, fuerza bruta masiva).")
-    print(f"    {color_text(f'ENTER = {default_mezcla} (recomendado para Complejidad {comp})', COLOR_GREEN)}")
-    params["mezcla"] = safe_int_input(f"    Nivel de mezcla 1-4 [{default_mezcla}]: ", default_mezcla, min_value=1, max_value=4)
-    
-    print_question("19-B", "Nivel de Agresividad / Profundidad (Diagnóstico Automático)")
-    
-    # Calcular recomendación
-    rec_agr = 1
-    if params.get("specials") or params.get("digits"): rec_agr = 2
-    if params.get("leet"): rec_agr = 3
-    if params.get("complexity", 2) >= 4 or (params.get("leet") and params.get("specials")): rec_agr = 4
 
-    print(color_text(f"    Según los ingredientes que encendiste, te diagnosticamos el Nivel {rec_agr}.", COLOR_YELLOW))
-    print("    Este nivel garantiza que no se recorten tus resultados y se use todo lo que pediste.")
-    print("    (Si eliges un nivel menor, se ignorarán algunos ajustes intencionalmente para ahorrar tiempo).")
-    print()
-    print(f"    {color_text('1', COLOR_CYAN)} = Solo alta probabilidad (Token+Número).")
-    print(f"    {color_text('2', COLOR_CYAN)} = Alta prob. + Variaciones lógicas (fechas, símbolos, parejas).")
-    print(f"    {color_text('3', COLOR_CYAN)} = Nivel 2 + Leet speak suave.")
-    print(f"    {color_text('4', COLOR_CYAN)} = Fuerza bruta ordenada (Genera TODO ordenado de más a menos probable).")
-    print(f"    {color_text(f'ENTER = {rec_agr} (Recomendado)', COLOR_GREEN)}")
-    params["agresividad"] = safe_int_input(f"    Nivel de agresividad 1-4 [{rec_agr}]: ", rec_agr, min_value=1, max_value=4)
+    
+    print_question("21", f"Nivel de Complejidad de mutación (1-5) [{color_text('2', COLOR_GREEN)}]")
+    print("    Define la profundidad de las variaciones Leet y gramaticales:")
+    print(f"      {color_text('1', COLOR_CYAN)}: Básico (Solo minúsculas/mayúsculas simples)")
+    print(f"      {color_text('2', COLOR_CYAN)}: Estándar (Leet común, años cortos, etc.)")
+    print(f"      {color_text('3', COLOR_CYAN)}: Avanzado (Leet múltiple, variaciones de fechas)")
+    print(f"      {color_text('4', COLOR_CYAN)}: Muy Alto (Combinaciones profundas de símbolos/números)")
+    print(f"      {color_text('5', COLOR_CYAN)}: Extremo (Máxima mutación, wordlists gigantes)")
+    ans_comp = input("    > ").strip()
+    params["complexity"] = int(ans_comp) if ans_comp.isdigit() else 2
 
-    print_question("20", "RAM máxima para deduplicación (en GB)")
-    print(f"    ENTER = {color_text('3', COLOR_GREEN)} GB")
-    print("    Nota: Más RAM evita lentitud al guardar diccionarios gigantes (Ej: Nivel 4).")
-    print("    Si tu diccionario es pequeño (Nivel 1 o 2), usar 3GB o 10GB será igual de rápido.")
-    print("    (SELIC no ocupará toda la RAM de golpe, es solo un límite máximo permitido).")
+    print_question("22", f"Nivel de Mezcla (Max Combo) (1-4) [{color_text('Auto', COLOR_GREEN)}]")
+    print("    Define cuántas palabras se unen para formar una sola contraseña:")
+    print(f"      {color_text('1', COLOR_CYAN)}: Individual (ej: 'marco')")
+    print(f"      {color_text('2', COLOR_CYAN)}: Parejas (ej: 'marco2026')")
+    print(f"      {color_text('3', COLOR_CYAN)}: Tríos (ej: 'marco2026!')")
+    print(f"      {color_text('4', COLOR_CYAN)}: Cuartetos (ej: 'marco2026perro!')")
+    print("    ENTER = Selección automática segura según complejidad.")
+    ans_mezcla = input("    > ").strip()
+    params["mezcla"] = int(ans_mezcla) if ans_mezcla.isdigit() else "auto"
+
+    # Diagnóstico de Agresividad antes de preguntar
+    from selic_core import get_projected_level, _combo_name
+    
+    # Calculamos el combo máximo real que se usará (Lógica mejorada)
+    # Comp 1 -> Mix 1 | Comp 2-3 -> Mix 2 | Comp 4 -> Mix 3 | Comp 5 -> Mix 4
+    if isinstance(params["mezcla"], int):
+        actual_max_combo = params["mezcla"]
+    else:
+        if params["complexity"] <= 1: actual_max_combo = 1
+        elif params["complexity"] <= 3: actual_max_combo = 2
+        else: actual_max_combo = 3
+        if params["complexity"] == 5: actual_max_combo = 4
+
+    # El diagnóstico nos da el nivel RECOMENDADO
+    proj_level = get_projected_level(actual_max_combo, params)
+    level_name = _combo_name(proj_level)
+    
+    print_question("23", f"Nivel de Agresividad / Diagnóstico [{color_text(str(proj_level), COLOR_GREEN)}]")
+    print(color_text(f"    🔍 DIAGNÓSTICO: Se ha detectado que tu configuración corresponde al Nivel {proj_level} ({level_name}).", COLOR_CYAN))
+    print("    Si deseas un ataque más profundo o más ligero, puedes ajustarlo aquí abajo.")
+    print(f"      {color_text('1', COLOR_CYAN)}: Rápido (Solo lo más probable, muy ligero)")
+    print(f"      {color_text('2', COLOR_CYAN)}: Moderado (Equilibrio entre velocidad y éxito)")
+    print(f"      {color_text('3', COLOR_CYAN)}: Profundo (Ataque de ingeniería social estándar)")
+    print(f"      {color_text('4', COLOR_CYAN)}: Exhaustivo (Fuerza bruta total ordenada, lento)")
+    
+    print(f"    ENTER = usar nivel recomendado [{color_text(str(proj_level), COLOR_GREEN)}]")
+    ans_agr = input("    > ").strip()
+    params["agresividad"] = int(ans_agr) if ans_agr.isdigit() else int(proj_level)
+
+    print_question("24", "RAM máxima para deduplicación (en GB) [3]:")
     params["max_ram"] = safe_int_input("    > ", 3, min_value=1, max_value=32)
     print("\nResumen rápido:")
     print(f"  {color_text('Salida:', COLOR_YELLOW)} {color_text(params['output_file'], COLOR_CYAN)}")
@@ -738,7 +737,14 @@ def run_gui(args):
             break
         config["other"].append(extra)
     while True:
-        patt = simpledialog.askstring("Patrón", "Plantilla/patrón como 7###C (deja vacío para continuar):")
+        print(color_text("\n[+] Configuración de Patrones Avanzados", COLOR_CYAN))
+        print(color_text("    Marcadores disponibles:", COLOR_YELLOW))
+        print(f"    {color_text('#', COLOR_GREEN)} = Tus datos  {color_text('%', COLOR_GREEN)} = Números (0-9)  {color_text('@', COLOR_GREEN)} = Letras (a-z)")
+        print(f"    {color_text(',', COLOR_GREEN)} = Letras (A-Z)  {color_text('?', COLOR_GREEN)} = Símbolos       {color_text('\\', COLOR_GREEN)} = Escape (ej: \\#)")
+        print(color_text("    Ejemplo: IV#%?CO (Genera: IV + Dato + Núm + Símb + CO)", COLOR_CYAN))
+        
+        print_question("14", "Ingresa tus patrones (uno por línea, deja vacío para terminar):")
+        patt = simpledialog.askstring("Patrón", "Plantilla/patrón (deja vacío para continuar):")
         if not patt:
             break
         config["patterns"].append(patt)
@@ -780,567 +786,6 @@ def load_dictionary(file_path):
     return words
 
 
-def normalize_token(value, decompose_numbers=False):
-    normalized = set()
-    if not value:
-        return normalized
-    value = str(value).strip()
-    if not value:
-        return normalized
-    normalized.add(value)
-    normalized.add(value.lower())
-    normalized.add(value.upper())
-    normalized.add(value.capitalize())
-    normalized.add(value.replace(" ", ""))
-    normalized.add(value.replace("-", ""))
-    normalized.add(value.replace("_", ""))
-    normalized.add(value.replace("/", ""))
-    normalized.add("_".join(value.split()))
-
-    if re.search(r"[\-/\.\\]", value):
-        date_parts = [p for p in re.split(r"[\-/\.\\\s]+", value) if p]
-        if date_parts and all(part.isdigit() for part in date_parts):
-            normalized.add("".join(date_parts))
-            for part in date_parts:
-                normalized.add(part)
-                if part.startswith("0"):
-                    normalized.add(part.lstrip("0"))
-            if len(date_parts) == 3:
-                day, month, year = date_parts
-                if len(day) in (1, 2) and len(month) in (1, 2) and len(year) in (2, 4):
-                    day_z = day.zfill(2)
-                    month_z = month.zfill(2)
-                    normalized.add(day_z + month_z + year)
-                    normalized.add(month_z + day_z + year)
-                    normalized.add(day_z + month_z)
-                    normalized.add(month_z + year)
-                    normalized.add(day_z + year)
-                    normalized.add(day_z + month_z)
-                    normalized.add(month_z + day_z)
-                    normalized.add(day.lstrip("0"))
-                    normalized.add(month.lstrip("0"))
-                    normalized.add(day.lstrip("0") + month.lstrip("0"))
-                    normalized.add(month.lstrip("0") + day.lstrip("0"))
-
-    for part in split_words(value):
-        normalized.add(part)
-        normalized.add(part.lower())
-        normalized.add(part.upper())
-        normalized.add(part.capitalize())
-        if part.isdigit():
-            if decompose_numbers:
-                normalized.update(decompose_number(part))
-            continue
-        # Prefijos: "Marco" → "Ma", "Mar", "Marco"
-        for length in range(1, min(5, len(part)) + 1):
-            normalized.add(part[:length])
-        # Sufijos: "Marco" → "co", "rco", "Marco"
-        for length in range(1, min(5, len(part)) + 1):
-            normalized.add(part[-length:])
-    # Evitar tokens triviales de un solo carácter que inflan demasiado la generación.
-    normalized = {token for token in normalized if len(token) > 1}
-    return normalized
-
-
-def apply_mutations(token, enable_leet=True, leet_mappings=None, multi_leet=False, max_leet_replacements=8):
-    leet_mappings = leet_mappings or {
-        "a": "4",
-        "A": "4",
-        "s": "$",
-        "S": "$",
-        "o": "0",
-        "O": "0",
-        "i": "1",
-        "I": "1",
-        "e": "3",
-        "E": "3",
-        "l": "1",
-        "L": "1",
-    }
-    mutated = {token}
-    if enable_leet:
-        # Encontrar posiciones reemplazables
-        replaceable = [(idx, char) for idx, char in enumerate(token) if char in leet_mappings]
-        if multi_leet and len(replaceable) > 1:
-            # Generar todas las combinaciones de 1..N reemplazos (máx por defecto 8 posiciones para no explotar)
-            max_positions = min(len(replaceable), max_leet_replacements)
-            for count in range(1, max_positions + 1):
-                for combo in itertools.combinations(replaceable[:max_positions], count):
-                    chars = list(token)
-                    for idx, char in combo:
-                        chars[idx] = leet_mappings[char]
-                    mutated.add("".join(chars))
-        else:
-            # Leet simple: un reemplazo a la vez
-            variant = list(token)
-            for idx, char in enumerate(variant):
-                if char in leet_mappings:
-                    copy = variant.copy()
-                    copy[idx] = leet_mappings[char]
-                    mutated.add("".join(copy))
-    if token[::-1] != token:
-        mutated.add(token[::-1])
-    return mutated
-
-
-def build_char_pool(hash_mode, base_tokens, options):
-    pool = set()
-    if hash_mode in ("letters", "all"):
-        if options.get("lower") and not options.get("upper"):
-            pool.update(DEFAULT_LOWER)
-        elif options.get("upper") and not options.get("lower"):
-            pool.update(DEFAULT_UPPER)
-        else:
-            pool.update(DEFAULT_LOWER + DEFAULT_UPPER)
-    if hash_mode in ("digits", "all") or options.get("digits"):
-        pool.update(DEFAULT_DIGITS)
-    if hash_mode in ("specials", "all") or options.get("specials"):
-        pool.update(DEFAULT_SPECIALS)
-    if hash_mode == "base":
-        for token in base_tokens:
-            pool.update(token)
-    if hash_mode == "all" and not pool:
-        pool.update(DEFAULT_LOWER + DEFAULT_UPPER + DEFAULT_DIGITS + DEFAULT_SPECIALS)
-    return sorted(pool)
-
-
-def decompose_number(num_str):
-    """Descompone un número en fragmentos útiles para combinaciones."""
-    fragments = set()
-    if not num_str or not num_str.isdigit():
-        return fragments
-    fragments.add(num_str)
-    if len(num_str) >= 2:
-        fragments.add(num_str[-2:])
-        fragments.add(num_str[:2])
-    if len(num_str) >= 4:
-        fragments.add(num_str[-4:])
-        fragments.add(num_str[:4])
-    if len(num_str) == 4:
-        fragments.add(num_str[2:])
-    return fragments
-
-
-def collect_social_tokens(params, dictionary_words, options):
-    normalized = set()
-    numeric_parts = set()
-
-    def process_value(value, should_decompose):
-        normalized.update(normalize_token(value, should_decompose))
-        for token in normalize_token(value, should_decompose):
-            if token.isdigit():
-                numeric_parts.add(token)
-                if should_decompose:
-                    numeric_parts.update(decompose_number(token))
-
-    for key in ("name", "color", "birth_year", "year", "family_name", "family_years", "team", "birth_place", "living_city", "dni", "pet", "singer"):
-        value = params.get(key)
-        if not value:
-            continue
-        should_decompose = (
-            params.get("decompose_numbers", False) and key in ("birth_year", "year", "family_years", "dni")
-        ) or (
-            params.get("decompose_number_dates", False) and key in ("birth_year", "year", "family_years")
-        ) or (
-            params.get("decompose_number_document", False) and key == "dni"
-        )
-        if isinstance(value, list):
-            for item in value:
-                process_value(item, should_decompose)
-        else:
-            process_value(value, should_decompose)
-
-    if params.get("other"):
-        for extra in params["other"]:
-            if extra:
-                process_value(extra, False)
-
-    for word in dictionary_words:
-        normalized.add(word)
-        normalized.update(normalize_token(word, False))
-        if word.isdigit():
-            numeric_parts.add(word)
-
-    # Filtrar una vez tokens muy cortos para evitar explosiones combinatorias.
-    normalized = {token for token in normalized if len(token) > 1}
-    return sorted(normalized), sorted(numeric_parts)
-
-
-def _case_variants(token, options):
-    variants = set()
-    if options.get("lower") and not options.get("upper"):
-        variants.add(token.lower())
-    elif options.get("upper") and not options.get("lower"):
-        variants.add(token.upper())
-    else:
-        variants.update({token, token.lower(), token.upper(), token.capitalize()})
-    if options.get("complexity", 2) >= 3:
-        for variant in list(variants):
-            if variant[::-1] != variant:
-                variants.add(variant[::-1])
-        # swapcase: "Marco" → "mARCO"
-        variants.add(token.swapcase())
-        # alternating: "Marco" → "MaRcO" (par=original, impar=invertido)
-        alt = "".join(c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(token))
-        variants.add(alt)
-    return {v for v in variants if v}
-
-
-def _generate_token_variants(base, options, max_length):
-    suffixes = list(DEFAULT_DIGIT_SUFFIXES)
-    suffixes.extend(options.get("digit_suffixes") or [])
-    birth_years = options.get("birth_year")
-    if birth_years:
-        if isinstance(birth_years, list):
-            suffixes.extend([y for y in birth_years if y])
-        else:
-            suffixes.append(birth_years)
-    suffixes.extend([num for num in options.get("numeric_parts", []) if num])
-    specials = list(DEFAULT_SPECIALS) if options.get("specials") else []
-
-    variants = set(_case_variants(base, options))
-    multi_leet = options.get("complexity", 2) >= 3
-    if options.get("leet"):
-        max_leet = options.get("max_leet_replacements", 8)
-        for variant in list(variants):
-            variants.update(apply_mutations(variant, True, options.get("leet_mappings"), multi_leet=multi_leet, max_leet_replacements=max_leet))
-
-    for variant in variants:
-        if len(variant) <= max_length:
-            yield variant
-
-        if options.get("digits"):
-            for num in suffixes:
-                if not num:
-                    continue
-                candidate = f"{variant}{num}"
-                if len(candidate) <= max_length:
-                    yield candidate
-                if options.get("specials"):
-                    for sym in specials:
-                        if len(candidate) + 1 <= max_length:
-                            yield f"{candidate}{sym}"
-                        if len(sym) + len(candidate) <= max_length:
-                            yield f"{sym}{candidate}"
-
-        if options.get("specials"):
-            for sym in specials:
-                candidate1 = f"{variant}{sym}"
-                if len(candidate1) <= max_length:
-                    yield candidate1
-                candidate2 = f"{sym}{variant}"
-                if len(candidate2) <= max_length:
-                    yield candidate2
-
-        if options.get("complexity", 2) >= 4:
-            if len(variant) + 1 <= max_length:
-                yield f"{variant}!"
-            if len(variant) + 4 <= max_length:
-                yield f"{variant}2024"
-
-        if options.get("complexity", 2) >= 5 and options.get("digits") and options.get("specials"):
-            for num in suffixes:
-                if not num:
-                    continue
-                for sym in specials:
-                    candidate = f"{variant}{num}{sym}"
-                    if len(candidate) <= max_length:
-                        yield candidate
-                    candidate2 = f"{variant}{sym}{num}"
-                    if len(candidate2) <= max_length:
-                        yield candidate2
-                    candidate3 = f"{sym}{variant}{num}"
-                    if len(candidate3) <= max_length:
-                        yield candidate3
-
-
-# La función generate_combination_variants se ha movido a selic_core.py
-
-
-def filter_by_length_and_complexity(candidates, min_length, max_length, options):
-    cleaned = []
-    for candidate in candidates:
-        length = len(candidate)
-        if length < min_length or length > max_length:
-            continue
-        cleaned.append(candidate)
-    return cleaned
-
-
-def _calculate_pattern_pool_size(hashes, full_pool_size):
-    """Calcula el tamaño óptimo del pool para un patrón según la cantidad de #.
-    Busca que pool^hashes no supere MAX_TEMPLATE_EXPANSION."""
-    if hashes == 0:
-        return full_pool_size
-    # Encontrar el pool máximo tal que pool^hashes <= MAX_TEMPLATE_EXPANSION
-    optimal = int(MAX_TEMPLATE_EXPANSION ** (1.0 / hashes))
-    return min(optimal, full_pool_size)
-
-
-def generate_from_patterns(patterns, char_pool, min_length, max_length, count_limit=None):
-    if not patterns:
-        return
-    generated = 0
-    for pattern in patterns:
-        hashes = pattern.count("#")
-        if hashes == 0:
-            if min_length <= len(pattern) <= max_length:
-                yield pattern
-                generated += 1
-                if count_limit and generated >= count_limit:
-                    return
-            continue
-        if not char_pool:
-            continue
-        # Pool dinámico: ajusta el tamaño para que las combinaciones no exploten
-        pool_size = _calculate_pattern_pool_size(hashes, len(char_pool))
-        choices = char_pool[:pool_size]
-        total_combos = pool_size ** hashes
-        if total_combos > MAX_TEMPLATE_EXPANSION:
-            print(color_text(
-                f"⚠ Patrón '{pattern}' con {hashes} marcadores (#) generaría {total_combos:,} combinaciones. "
-                f"Limitando pool a {pool_size} caracteres (~{pool_size**hashes:,} combinaciones).",
-                COLOR_YELLOW
-            ))
-        for product in itertools.product(choices, repeat=hashes):
-            candidate_chars = []
-            replacement_index = 0
-            for char in pattern:
-                if char == "#":
-                    candidate_chars.append(product[replacement_index])
-                    replacement_index += 1
-                else:
-                    candidate_chars.append(char)
-            candidate = "".join(candidate_chars)
-            if min_length <= len(candidate) <= max_length:
-                yield candidate
-                generated += 1
-                if count_limit and generated >= count_limit:
-                    return
-            if generated > MAX_TEMPLATE_EXPANSION:
-                return
-
-
-def print_live_candidate(candidate, progress_state):
-    progress_state["current"] = candidate
-    progress_state["generated"] = progress_state.get("generated", 0) + 1
-
-
-def _format_time(seconds):
-    if seconds < 60:
-        return f"{int(seconds)}s"
-    elif seconds < 3600:
-        return f"{int(seconds // 60)}m {int(seconds % 60)}s"
-    else:
-        h = int(seconds // 3600)
-        m = int((seconds % 3600) // 60)
-        return f"{h}h {m}m"
-
-
-def _format_size(bytes_count):
-    if bytes_count < 1024:
-        return f"{bytes_count} B"
-    elif bytes_count < 1024 * 1024:
-        return f"{bytes_count / 1024:.1f} KB"
-    elif bytes_count < 1024 * 1024 * 1024:
-        return f"{bytes_count / (1024*1024):.1f} MB"
-    else:
-        return f"{bytes_count / (1024*1024*1024):.2f} GB"
-
-
-def show_progress(stop_event, total_estimate, progress_state, output_file):
-    spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    base_name = os.path.basename(output_file) if output_file else DEFAULT_OUTPUT_FILE
-    start_time = time.time()
-    sys.stdout.write("\n\n")
-    sys.stdout.flush()
-    i = 0
-    while not stop_event.is_set():
-        current = progress_state.get("current") or "..."
-        generated = progress_state.get("generated", 0)
-        skipped = progress_state.get("skipped_duplicates", 0)
-        elapsed = time.time() - start_time
-        speed = int(generated / elapsed) if elapsed > 0 else 0
-        # Estimar tamaño del archivo
-        try:
-            file_size = os.path.getsize(output_file) if os.path.exists(output_file) else 0
-        except OSError:
-            file_size = 0
-        spinner_char = spinner[i % len(spinner)]
-        line1 = (f"  {color_text(spinner_char, COLOR_GREEN)} "
-                 f"{color_text(f'{generated:,}', COLOR_CYAN)} generadas "
-                 f"| {color_text(f'{skipped:,}', COLOR_ORANGE)} duplicados "
-                 f"| {color_text(f'{speed:,}/s', COLOR_GREEN)} "
-                 f"| {color_text(_format_size(file_size), COLOR_YELLOW)} "
-                 f"| {color_text(_format_time(elapsed), COLOR_CYAN)}")
-        line2 = (f"  {color_text('[', COLOR_YELLOW)}"
-                 f"{color_text(base_name, COLOR_CYAN)}"
-                 f"{color_text(']: ', COLOR_YELLOW)}"
-                 f"{color_text(current[:50], COLOR_ORANGE)}")
-        sys.stdout.write("\033[2A")
-        sys.stdout.write("\033[2K" + line1 + "\n")
-        sys.stdout.write("\033[2K" + line2 + "\n")
-        sys.stdout.flush()
-        i += 1
-        time.sleep(0.3)
-    # Guardar tiempo total en progress_state
-    progress_state["elapsed"] = time.time() - start_time
-    print()
-    print("Generación completada.")
-
-
-def stream_candidates_to_file(file_path, candidate_iterables, min_length, max_length, count_limit=None, progress_state=None, max_ram_gb=3):
-    written = 0
-    seen = set()
-    # ~80 bytes por entrada en el set (string + overhead del set)
-    max_entries = int(max_ram_gb * 1024 * 1024 * 1024 / 80)
-    ram_exceeded = False
-    skipped_duplicates = 0
-    # Estadísticas por tipo
-    stats = {"alpha": 0, "alnum": 0, "symbols": 0, "lengths": {}}
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            for iterable in candidate_iterables:
-                for candidate in iterable:
-                    if not candidate:
-                        continue
-                    if len(candidate) < min_length or len(candidate) > max_length:
-                        continue
-                    # Deduplicación en memoria con límite de RAM
-                    if candidate in seen:
-                        skipped_duplicates += 1
-                        continue
-                    if not ram_exceeded:
-                        seen.add(candidate)
-                        if len(seen) >= max_entries:
-                            ram_exceeded = True
-                    f.write(f"{candidate}\n")
-                    written += 1
-                    # Estadísticas
-                    clen = len(candidate)
-                    stats["lengths"][clen] = stats["lengths"].get(clen, 0) + 1
-                    if candidate.isalpha():
-                        stats["alpha"] += 1
-                    elif candidate.isalnum():
-                        stats["alnum"] += 1
-                    else:
-                        stats["symbols"] += 1
-                    if progress_state is not None:
-                        print_live_candidate(candidate, progress_state)
-                    if count_limit and written >= count_limit:
-                        if progress_state is not None:
-                            progress_state["ram_exceeded"] = ram_exceeded
-                            progress_state["skipped_duplicates"] = skipped_duplicates
-                        return written
-    except IOError as e:
-        print(f"Error al escribir el archivo de salida: {e}")
-    if progress_state is not None:
-        progress_state["ram_exceeded"] = ram_exceeded
-        progress_state["skipped_duplicates"] = skipped_duplicates
-        progress_state["stats"] = stats
-    # Liberar memoria del set
-    del seen
-    gc.collect()
-    return written
-
-
-def deduplicate_file(input_file, output_file=None):
-    """Elimina duplicados de un archivo. Usa Python set line-by-line para evitar
-    cargar todo en RAM (el Get-Content de PowerShell cargaba todo, mismo error del OrderedDict).
-    Si el set crece demasiado, cae a sort nativo del SO como último recurso."""
-    if output_file is None:
-        base, ext = os.path.splitext(input_file)
-        output_file = f"{base}_dedup{ext}"
-    
-    try:
-        if not os.path.exists(input_file):
-            print(f"Error: No se encuentra el archivo {input_file}")
-            return False
-        
-        file_size = os.path.getsize(input_file)
-        print(f"Procesando archivo: {input_file} ({file_size / (1024*1024):.1f} MB)")
-        
-        # Intentar dedup con Python set (line-by-line, no carga todo en RAM)
-        seen = set()
-        input_lines = 0
-        output_lines = 0
-        max_set_entries = 50_000_000  # ~4GB de RAM para el set
-        set_overflow = False
-        
-        try:
-            with open(input_file, "r", encoding="utf-8", errors="ignore") as fin, \
-                 open(output_file, "w", encoding="utf-8") as fout:
-                for line in fin:
-                    input_lines += 1
-                    stripped = line.rstrip("\n\r")
-                    if not stripped:
-                        continue
-                    if stripped not in seen:
-                        if not set_overflow:
-                            seen.add(stripped)
-                            if len(seen) >= max_set_entries:
-                                set_overflow = True
-                        fout.write(stripped + "\n")
-                        output_lines += 1
-        except MemoryError:
-            # Si el set agotó la RAM, caer a sort nativo del SO
-            del seen
-            gc.collect()
-            print(color_text("RAM insuficiente para dedup Python. Usando sort nativo del SO...", COLOR_YELLOW))
-            return _deduplicate_file_os(input_file, output_file)
-        
-        del seen
-        gc.collect()
-        
-        # Si hubo overflow del set, el archivo puede tener duplicados residuales
-        # En ese caso, usar sort nativo como segunda pasada
-        if set_overflow:
-            print(color_text("Set de dedup lleno. Ejecutando segunda pasada con sort nativo...", COLOR_YELLOW))
-            temp_file = output_file + ".tmp"
-            os.replace(output_file, temp_file)
-            success = _deduplicate_file_os(temp_file, output_file)
-            try:
-                os.remove(temp_file)
-            except OSError:
-                pass
-            if not success:
-                return False
-            output_lines = sum(1 for _ in open(output_file, 'r', encoding='utf-8', errors='ignore'))
-        
-        duplicados = input_lines - output_lines
-        print(f"\n✓ Deduplicación completada:")
-        print(f"  Líneas originales: {input_lines:,}")
-        print(f"  Duplicados removidos: {duplicados:,} ({100*duplicados/input_lines:.1f}%)")
-        print(f"  Archivo guardado en: {output_file}")
-        return True
-    except Exception as e:
-        print(f"Error inesperado al deduplicar: {e}")
-        return False
-
-
-def _deduplicate_file_os(input_file, output_file):
-    """Deduplicación usando comando nativo del SO (fallback)."""
-    try:
-        if platform.system() == "Windows":
-            cmd = f"sort \"{input_file}\" | Get-Unique | Out-File -FilePath \"{output_file}\" -Encoding UTF8"
-            result = subprocess.run(
-                ["powershell", "-NoProfile", "-Command", cmd],
-                capture_output=True,
-                text=True
-            )
-        else:
-            result = subprocess.run(
-                ["sort", "-u", input_file, "-o", output_file],
-                capture_output=True,
-                text=True
-            )
-        if result.returncode != 0:
-            print(f"Error en sort nativo: {result.stderr}")
-            return False
-        return True
-    except Exception as e:
-        print(f"Error en sort nativo: {e}")
-        return False
 
 
 def build_config_from_args(args, defaults=None):
@@ -1377,6 +822,7 @@ def build_config_from_args(args, defaults=None):
         "agresividad": getattr(args, "agresividad", defaults.get("agresividad", 4)),
         "decompose_numbers": args.decompose_numbers or defaults.get("decompose_numbers", False),
         "max_ram": args.max_ram if args.max_ram is not None else defaults.get("max_ram", 3),
+        "max_template_expansion": defaults.get("max_template_expansion", 100000000),
     }
 
 
@@ -1387,7 +833,10 @@ def config_has_social_info(config):
 def run_config_wizard(config_path):
     import configparser
     print_header()
-    print("=== MODO DE CONFIGURACIÓN INTERACTIVA ===")
+    print(color_text("=== MODO INTERACTIVO DE INGENIERÍA SOCIAL ===", COLOR_CYAN))
+    print(color_text("💡 Tip: Presiona ENTER para usar el valor por defecto indicado en MAYÚSCULAS.", COLOR_YELLOW))
+    print(color_text("   (No importa si escribes s/S o n/N, el programa lo entenderá igual).", COLOR_YELLOW))
+    print("-------------------------------------------------------------------------")
     print(f"Editando archivo: {color_text(config_path, COLOR_CYAN)}")
     print("Presiona ENTER para mantener el valor actual en cualquier pregunta.\n")
 
@@ -1471,7 +920,8 @@ def main():
         "remove_accents_flag": config.get("remove_accents_flag", True),
         "use_separators": config.get("use_separators", False),
         "allow_extreme_generation": config.get("allow_extreme_generation", False),
-        "extreme_generation_limit": config.get("extreme_generation_limit", 5000000000)
+        "extreme_generation_limit": config.get("extreme_generation_limit", 5000000000),
+        "max_template_expansion": config.get("max_template_expansion", 100000000)
     }
     base_tokens, numeric_parts = collect_social_tokens(config, dictionary_words, options)
     options["numeric_parts"] = numeric_parts
@@ -1502,7 +952,8 @@ def main():
         if config.get("patterns"):
             pattern_candidates = generate_from_patterns(
                 config.get("patterns"), char_pool,
-                config["min_length"], config["max_length"], config.get("count")
+                config["min_length"], config["max_length"], config.get("count"),
+                max_expansion=options.get("max_template_expansion")
             )
             candidate_iterables.append(pattern_candidates)
 
@@ -1552,7 +1003,7 @@ def main():
                 print(f"\n{color_text('📊 Estadísticas:', COLOR_CYAN)}")
                 print(f"  Total únicas: {color_text(f'{written:,}', COLOR_GREEN)}")
                 print(f"  Duplicados eliminados: {color_text(f'{skipped:,}', COLOR_ORANGE)}")
-                print(f"  Tiempo: {color_text(_format_time(elapsed), COLOR_CYAN)}")
+                print(f"  Tiempo: {color_text(format_time(elapsed), COLOR_CYAN)}")
                 print(f"  Longitud promedio: {color_text(f'{avg_len:.1f}', COLOR_GREEN)} chars (rango: {min_len}-{max_len_actual})")
                 pct_a = 100 * alpha / written
                 pct_an = 100 * alnum / written

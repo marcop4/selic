@@ -116,6 +116,12 @@ def ask_config(options):
     print(color_text("💡 Tip Hacker: ¿Quieres contraseñas largas (4 palabras juntas) pero sin letras raras?", COLOR_MAGENTA))
     print(color_text("   Elige Nivel 4 y aquí escribe: Leet=No LeetFull=No", COLOR_MAGENTA))
     
+    print(color_text("\n[ Sufijos/Prefijos personalizados (Anclas) ]", COLOR_YELLOW))
+    print(color_text("Escribe lo que quieras pegar a CADA palabra (Ej: SH, !, 2025).", COLOR_CYAN))
+    extra_anchors = input(color_text(">> Anclas (ENTER = ninguna): ", COLOR_GREEN)).strip()
+    if extra_anchors:
+        options["digit_suffixes"] = parse_multi_values(extra_anchors)
+
     while True:
         config_input = input(color_text(">> Ajustes (ENTER para continuar con defaults): ", COLOR_GREEN)).strip()
         
@@ -199,6 +205,7 @@ def ask_config(options):
 
 def main():
     parser = argparse.ArgumentParser(description="SELIC mini - Generador rápido")
+    parser.add_argument("-p", "--pattern", help="Patrón avanzado (ej: #%?CO)")
     args = parser.parse_args()
 
     print_mini_logo()
@@ -233,6 +240,22 @@ def main():
             break
         print(color_text(f"[!] Error: Debe ser un número mayor o igual a {min_length}.", COLOR_MAGENTA))
     print()
+    
+    # Soporte de Patrones
+    pattern = args.pattern
+    if not pattern:
+        print(color_text("\n[ Patrones Avanzados ]", COLOR_YELLOW))
+        print(color_text("  Marcadores disponibles:", COLOR_CYAN))
+        print(color_text("    # : Datos sociales (Nombres, DNI, Años...)", COLOR_GREEN))
+        print(color_text("    % : Números (0-9)", COLOR_GREEN))
+        print(color_text("    @ : Letras minúsculas (a-z)", COLOR_GREEN))
+        print(color_text("    , : Letras MAYÚSCULAS (A-Z)", COLOR_GREEN))
+        print(color_text("    ? : Símbolos especiales (!@#$...)", COLOR_GREEN))
+        print(color_text("    \\ : Carácter literal (ej: \\# para un '#' real)", COLOR_GREEN))
+        print(color_text("\n>> ¿Desea usar patrones avanzados? (Ej: #%?2026 | ENTER = No)", COLOR_CYAN))
+        pattern = input(color_text("   > ", COLOR_GREEN)).strip()
+    
+    options_patterns = [pattern] if pattern else []
 
     raw_tokens = parse_mini_input(user_input)
     
@@ -251,7 +274,8 @@ def main():
         "digit_suffixes": [],
         "numeric_parts": [],
         "allow_extreme_generation": False,
-        "extreme_generation_limit": 5000000000
+        "extreme_generation_limit": 5000000000,
+        "patterns": options_patterns
     }
     
     options = ask_config(options)
@@ -282,9 +306,16 @@ def main():
     print(color_text("[*] Generando...", COLOR_YELLOW))
     
     start_time = time.time()
-    
-    agr = options.get("agresividad", 4)
     candidate_iterables = []
+    
+    # Inyectar Patrones si existen
+    char_pool = build_char_pool("all", base_tokens, options)
+    if options.get("patterns"):
+        candidate_iterables.append(generate_from_patterns(
+            options["patterns"], char_pool, min_length, max_length
+        ))
+
+    agr = options.get("agresividad", 4)
     if agr == 4:
         for t in range(1, 5):
             candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, count_limit=None, max_length=max_length))

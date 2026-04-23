@@ -1,5 +1,25 @@
 # Changelog - SELIC (Social Engineering Wordlist Generator)
 
+## [1.2.0] - 2026-04-23
+### Añadido
+- **Diagnóstico Dinámico (CLI/GUI)**: El sistema analiza tus ajustes y recomienda un nivel de agresividad óptimo.
+- **Medidor de Gravedad (GUI)**: Indicador visual por bloques (Verde a Rojo) que muestra el impacto de la configuración en tiempo real.
+- **Patrones en Mini**: Soporte completo para patrones avanzados (#, %, @...) en `selic_mini.py`.
+- **Nuevos Campos GUI**: Fecha de nacimiento y selectores de longitud mín/máx integrados.
+- **Botones de Ayuda [?]**: Documentación contextual dentro de la interfaz gráfica.
+
+### Mejorado
+- **Estandarización UI**: Formato `[S/n]` profesional con resaltado en color verde para valores por defecto.
+- **Lógica de Mezcla**: La complejidad 2 ahora permite "Mezcla de Parejas" por defecto en modo automático.
+- **DNI/Documentos**: Soporte para documentos alfanuméricos y mejores fragmentaciones.
+- **Detección de Ñ**: Soporte nativo para caracteres especiales hispanos.
+
+### Corregido
+- Error de concatenación `TypeError` en el motor de agresividad.
+- Repetición de textos en los diagnósticos del CLI.
+- Bug de inicialización de listas en la generación de patrones del modo Mini.
+- SyntaxWarning por secuencias de escape en Python 3.12+.
+
 ## [1.2.0] - 2026-04-22
 ### 🚀 1. Re-Arquitectura del Núcleo (Core)
 El motor ha sido extraído a `selic_core.py`, permitiendo que múltiples interfaces usen la misma lógica de generación de alto rendimiento.

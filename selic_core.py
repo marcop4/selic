@@ -32,7 +32,7 @@ COLOR_YELLOW = "\033[38;5;226m"
 COLOR_ORANGE = "\033[38;5;208m"
 COLOR_MAGENTA = "\033[38;5;201m"
 COLOR_RESET = "\033[0m"
-MAX_TEMPLATE_EXPANSION = 2000000
+MAX_TEMPLATE_EXPANSION = 100000000
 
 COMMON_PASSWORDS = [
     "123456", "12345678", "123456789", "1234567890", "password", "contraseña",
@@ -98,7 +98,8 @@ def validate_date(date_str):
 def validate_dni(dni_str):
     if not dni_str:
         return True
-    if not re.match(r"^\d{6,12}$", dni_str):
+    # Ahora permite letras y números, de 4 a 15 caracteres (soporte internacional)
+    if not re.match(r"^[a-zA-Z0-9]{4,15}$", dni_str):
         return False
     return True
 
@@ -116,7 +117,8 @@ def remove_accents(text):
         'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
         'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
         'ä': 'a', 'ë': 'e', 'ï': 'i', 'ö': 'o', 'ü': 'u',
-        'Ä': 'A', 'Ë': 'E', 'Ï': 'I', 'Ö': 'O', 'Ü': 'U'
+        'Ä': 'A', 'Ë': 'E', 'Ï': 'I', 'Ö': 'O', 'Ü': 'U',
+        'ñ': 'n', 'Ñ': 'N'
     }
     res = text
     for k, v in replacements.items():
@@ -493,22 +495,27 @@ def _format_estimate(n):
         return f"~{n/1_000_000_000:.1f} billones"
 
 def get_projected_level(max_combo, options):
-    """Determina a qué nivel heurístico equivalen los ajustes manuales."""
+    """Determina a qué nivel heurístico (int) equivalen los ajustes manuales."""
     comp = options.get("complexity", 2)
     leet = options.get("leet", False)
     specials = options.get("specials", False)
     
     if max_combo >= 3 or comp >= 4:
-        return "4 (Extremo)"
+        return 4
     if leet or comp >= 3:
-        return "3 (Avanzado)"
+        return 3
     if specials or max_combo >= 2:
-        return "2 (Intermedio)"
-    return "1 (Básico)"
+        return 2
+    return 1
 
 def _combo_name(level):
-    """Devuelve el nombre legible de un nivel de mezcla."""
-    names = {1: "Individual (1 palabra)", 2: "Parejas (2 palabras)", 3: "Tríos (3 palabras)", 4: "Cuartetos (4 palabras)"}
+    """Devuelve el nombre legible de un nivel de agresividad."""
+    names = {
+        1: "Social Lite (Básico)",
+        2: "Social Medium (Intermedio)",
+        3: "Social Deep (Avanzado)",
+        4: "Social Extreme (Exhaustivo)"
+    }
     return names.get(level, f"Nivel {level}")
 
 def show_impact_comparison(num_tokens, max_combo, options):
@@ -655,25 +662,6 @@ def check_and_prompt_limits(num_tokens, options, interactive):
                 confirm = input(color_text("\n>> [Escribe la frase o ENTER para volver a Mezcla segura]: ", COLOR_CYAN)).strip()
                 
                 # Ignorar espacios y mayúsculas para no ser frustrante
-                if confirm.upper().replace(" ", "") == "ACEPTOELRIESGO":
-                    print(color_text("  ✓ Riesgo aceptado por el usuario. Procediendo...", COLOR_ORANGE))
-                else:
-                    print(color_text("  [!] Operación cancelada. Volviendo a Mezcla segura.", COLOR_YELLOW))
-                    while True:
-                        resp = input(color_text(">> Elige una Mezcla segura (1, 2 o 3): ", COLOR_CYAN)).strip()
-                        if resp in ("1", "2", "3"):
-                            max_combo = int(resp)
-                            est = estimate_passwords(num_tokens, max_combo, options)
-                            break
-        elif est > 5_000_000:
-            print(color_text("⚠ La generación estimada es elevada.", COLOR_MAGENTA))
-        
-        print(color_text(f"  Mezcla actual: {max_combo} ({_combo_name(max_combo)})", COLOR_YELLOW))
-        print(color_text("  Opciones:", COLOR_CYAN))
-        print(color_text("    ENTER  = continuar con la mezcla actual", COLOR_GREEN))
-        print(color_text("    1/2/3/4 = cambiar nivel de mezcla", COLOR_GREEN))
-        resp = input(color_text(">> Mezcla [ENTER para continuar]: ", COLOR_CYAN)).strip()
-        if resp in ("1", "2", "3", "4"):
             max_combo = int(resp)
             print(color_text(f"  ✓ Mezcla ajustada a: {max_combo} ({_combo_name(max_combo)})", COLOR_GREEN))
             # Re-mostrar estimación actualizada
@@ -958,59 +946,109 @@ def generate_combination_variants(tokens, options, count_limit=None, max_length=
                     if count_limit and yielded >= count_limit:
                         return
 
-def _calculate_pattern_pool_size(hashes, full_pool_size):
+def _calculate_pattern_pool_size(hashes, full_pool_size, max_expansion=None):
+    if max_expansion is None:
+        max_expansion = MAX_TEMPLATE_EXPANSION
     if hashes == 0:
         return full_pool_size
-    optimal = int(MAX_TEMPLATE_EXPANSION ** (1.0 / hashes))
+    optimal = int(max_expansion ** (1.0 / hashes))
     return min(optimal, full_pool_size)
 
-def generate_from_patterns(patterns, char_pool, min_length, max_length, count_limit=None):
+def generate_from_patterns(patterns, char_pool, min_length, max_length, count_limit=None, max_expansion=None):
+    if max_expansion is None:
+        max_expansion = MAX_TEMPLATE_EXPANSION
     if not patterns:
         return
+    
+    # Definición de bolsas de caracteres para cada marcador
+    MARKER_POOLS = {
+        "#": char_pool,         # Social (Tus datos)
+        "%": DEFAULT_DIGITS,    # Números
+        "@": DEFAULT_LOWER,     # Minúsculas
+        ",": DEFAULT_UPPER,     # Mayúsculas
+        "?": DEFAULT_SPECIALS   # Símbolos
+    }
+    
     generated = 0
     for pattern in patterns:
-        hashes = pattern.count("#")
-        if hashes == 0:
-            if min_length <= len(pattern) <= max_length:
-                yield pattern
+        # Analizar el patrón para separar literales de marcadores (soportando escape \)
+        segments = []
+        pattern_markers = []
+        i = 0
+        while i < len(pattern):
+            char = pattern[i]
+            if char == "\\" and i + 1 < len(pattern):
+                # Es un escape, el siguiente caracter es literal
+                segments.append({"type": "literal", "value": pattern[i+1]})
+                i += 2
+            elif char in MARKER_POOLS:
+                # Es un marcador
+                segments.append({"type": "marker", "value": char})
+                pattern_markers.append(char)
+                i += 1
+            else:
+                # Es un caracter literal normal
+                segments.append({"type": "literal", "value": char})
+                i += 1
+        
+        if not pattern_markers:
+            # Reconstruir literal si hubo escapes
+            literal_val = "".join(s["value"] for s in segments)
+            if min_length <= len(literal_val) <= max_length:
+                yield literal_val
                 generated += 1
                 if count_limit and generated >= count_limit:
                     return
             continue
-        if not char_pool:
-            continue
-        pool_size = _calculate_pattern_pool_size(hashes, len(char_pool))
-        choices = char_pool[:pool_size]
-        total_combos = pool_size ** hashes
-        if total_combos > MAX_TEMPLATE_EXPANSION:
+
+        # Calcular combinaciones totales
+        total_combos = 1
+        for m in pattern_markers:
+            total_combos *= len(MARKER_POOLS[m])
+
+        # Si excede el límite, truncamos proporcionalmente las bolsas
+        current_pools = []
+        if total_combos > max_expansion:
+            reduction_factor = (max_expansion / total_combos) ** (1.0 / len(pattern_markers))
+            for m in pattern_markers:
+                full_pool = MARKER_POOLS[m]
+                new_size = max(1, int(len(full_pool) * reduction_factor))
+                current_pools.append(full_pool[:new_size])
+            
             print(color_text(
-                f"⚠ Patrón '{pattern}' con {hashes} marcadores (#) generaría {total_combos:,} combinaciones. "
-                f"Limitando pool a {pool_size} caracteres (~{pool_size**hashes:,} combinaciones).",
-                COLOR_YELLOW
+                f"⚠ Patrón '{pattern}' generaría {total_combos:,} combinaciones.\n"
+                f"  Limitando proporcionalmente para no exceder {max_expansion:,}.",
+                COLOR_ORANGE
             ))
-        for product in itertools.product(choices, repeat=hashes):
+        else:
+            for m in pattern_markers:
+                current_pools.append(MARKER_POOLS[m])
+
+        # Generar el producto cartesiano
+        for combination in itertools.product(*current_pools):
             candidate_chars = []
-            replacement_index = 0
-            for char in pattern:
-                if char == "#":
-                    candidate_chars.append(product[replacement_index])
-                    replacement_index += 1
+            comb_idx = 0
+            for seg in segments:
+                if seg["type"] == "marker":
+                    candidate_chars.append(combination[comb_idx])
+                    comb_idx += 1
                 else:
-                    candidate_chars.append(char)
+                    candidate_chars.append(seg["value"])
+            
             candidate = "".join(candidate_chars)
             if min_length <= len(candidate) <= max_length:
                 yield candidate
                 generated += 1
                 if count_limit and generated >= count_limit:
                     return
-            if generated > MAX_TEMPLATE_EXPANSION:
+            if generated > max_expansion:
                 return
 
 def print_live_candidate(candidate, progress_state):
     progress_state["current"] = candidate
     progress_state["generated"] = progress_state.get("generated", 0) + 1
 
-def _format_time(seconds):
+def format_time(seconds):
     if seconds < 60:
         return f"{int(seconds)}s"
     elif seconds < 3600:
@@ -1020,7 +1058,7 @@ def _format_time(seconds):
         m = int((seconds % 3600) // 60)
         return f"{h}h {m}m"
 
-def _format_size(bytes_count):
+def format_size(bytes_count):
     if bytes_count < 1024:
         return f"{bytes_count} B"
     elif bytes_count < 1024 * 1024:
@@ -1043,6 +1081,17 @@ def show_progress(stop_event, total_estimate, progress_state, output_file):
         skipped = progress_state.get("skipped_duplicates", 0)
         elapsed = time.time() - start_time
         speed = int(generated / elapsed) if elapsed > 0 else 0
+        
+        eta_str = "--"
+        if isinstance(total_estimate, (int, float)) and total_estimate > 0 and speed > 0:
+            remaining = total_estimate - generated
+            if remaining > 0:
+                eta_seconds = remaining / speed
+                eta_str = format_time(eta_seconds)
+            else:
+                eta_str = "0s"
+
+        # Estimar tamaño del archivo
         try:
             file_size = os.path.getsize(output_file) if os.path.exists(output_file) else 0
         except OSError:
@@ -1050,10 +1099,10 @@ def show_progress(stop_event, total_estimate, progress_state, output_file):
         spinner_char = spinner[i % len(spinner)]
         line1 = (f"  {color_text(spinner_char, COLOR_GREEN)} "
                  f"{color_text(f'{generated:,}', COLOR_CYAN)} generadas "
-                 f"| {color_text(f'{skipped:,}', COLOR_ORANGE)} duplicados "
                  f"| {color_text(f'{speed:,}/s', COLOR_GREEN)} "
-                 f"| {color_text(_format_size(file_size), COLOR_YELLOW)} "
-                 f"| {color_text(_format_time(elapsed), COLOR_CYAN)}")
+                 f"| {color_text(f'ETA: {eta_str}', COLOR_ORANGE)} "
+                 f"| {color_text(format_size(file_size), COLOR_YELLOW)} "
+                 f"| {color_text(format_time(elapsed), COLOR_CYAN)}")
         line2 = (f"  {color_text('[', COLOR_YELLOW)}"
                  f"{color_text(base_name, COLOR_CYAN)}"
                  f"{color_text(']: ', COLOR_YELLOW)}"
@@ -1217,3 +1266,36 @@ def _deduplicate_file_os(input_file, output_file):
     except Exception as e:
         print(f"Error en sort nativo: {e}")
         return False
+
+def check_and_prompt_limits(num_tokens, options, interactive):
+    """Establece el nivel de mezcla final basándose en la complejidad y los límites de seguridad."""
+    comp = options.get("complexity", 2)
+    # Lógica de mezcla automática (Mejorada: Comp 2 -> Mix 2)
+    if comp <= 1:
+        auto_combo = 1
+    elif comp <= 3:
+        auto_combo = 2
+    elif comp == 4:
+        auto_combo = 3
+    else:
+        auto_combo = 4
+
+    if not interactive:
+        return auto_combo
+
+    # Resumen y confirmación
+    show_pre_generation_summary(num_tokens, auto_combo, options, True)
+
+    print(f"  Mezcla actual: {auto_combo} ({_combo_name(auto_combo)})")
+    print("  Opciones:")
+    print("    ENTER  = continuar con la mezcla actual")
+    print("    1/2/3/4 = cambiar nivel de mezcla")
+    ans = input(">> Mezcla [ENTER para continuar]: ").strip()
+    
+    if ans in ("1", "2", "3", "4"):
+        final_combo = int(ans)
+        print(f"  ✓ Cambiando a Mezcla={final_combo}")
+        return final_combo
+    
+    print(f"  ✓ Continuando con Mezcla={auto_combo}")
+    return auto_combo
