@@ -483,6 +483,16 @@ def estimate_passwords(num_tokens, max_combo, options):
     estimated_final = int(estimated_with_suffixes * dedup_factor)
     return max(estimated_final, base_perms)
 
+def estimate_wordlist_size(options, social_tokens):
+    """Alias para la GUI: Calcula el estimado de contraseñas."""
+    # Calcular mezcla según complejidad si es auto
+    max_combo = options.get("mezcla")
+    if not isinstance(max_combo, int):
+        comp = options.get("complexity", 2)
+        max_combo = 1 if comp == 1 else (2 if comp <= 3 else 3)
+    
+    return estimate_passwords(len(social_tokens), max_combo, options)
+
 def _format_estimate(n):
     """Formatea un número grande de forma legible."""
     if n < 1_000:
