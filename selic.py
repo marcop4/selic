@@ -653,6 +653,7 @@ def prompt_interactive(defaults=None):
     print(f"  {color_text('Nombre:', COLOR_YELLOW)} {color_text(str(params.get('name') or '(vacío)'), COLOR_CYAN)}")
     print(f"  {color_text('Nacimiento:', COLOR_YELLOW)} {color_text(str(params.get('birth_year') or '(vacío)'), COLOR_CYAN)}")
     print(f"  {color_text('DNI:', COLOR_YELLOW)} {color_text(str(params.get('dni') or '(vacío)'), COLOR_CYAN)}")
+    print(f"  {color_text('Otros:', COLOR_YELLOW)} {color_text(', '.join(params.get('other') or []) or '(vacío)', COLOR_CYAN)}")
     print(f"  {color_text('Salida:', COLOR_YELLOW)} {color_text(params['output_file'], COLOR_CYAN)}")
     if params.get("base_dir"):
         print(f"  {color_text('Base dir:', COLOR_YELLOW)} {color_text(params['base_dir'], COLOR_CYAN)}")
