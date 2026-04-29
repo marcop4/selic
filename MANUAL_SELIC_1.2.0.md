@@ -35,6 +35,11 @@ SELIC realiza una **Fase 0 de Normalización**:
 *   **Limpieza:** Elimina tildes y caracteres especiales innecesarios.
 *   **Resultado:** Convierte tus datos crudos en todas las piezas posibles que un humano usaría para armar su clave.
 
+> **💡 Tip Hacker:** Puedes ingresar múltiples valores en casi cualquier campo separándolos por comas o espacios.
+> *   *Ejemplo en Nombre:* `Juan, pepe, admin`
+> *   *Ejemplo en Fechas:* `19/06/2003, 2010, 18-08-2004`
+> *   SELIC validará cada una y extraerá fragmentos de todas ellas de forma inteligente.
+
 ---
 
 ## 📊 3. Niveles de Agresividad (Tiers)
