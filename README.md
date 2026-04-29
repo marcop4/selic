@@ -32,6 +32,12 @@ Versión ligera y ultrarrápida sin dependencias. Perfecta para terminales rápi
 python selic_mini.py
 ```
 
+### 3. SELIC GUI (Visual)
+Interfaz gráfica completa con medidores de gravedad visuales y fácil gestión de la palabra clave final. Ideal para Windows y usuarios de escritorio.
+```bash
+python selic_gui.py
+```
+
 ---
 
 ## 🧠 Características Principales
