@@ -208,6 +208,9 @@ def ask_config(options):
     print(color_text(f"[*] Configuración Final: \n    {get_summary()}", COLOR_CYAN))
     sufijos = options.get("digit_suffixes", [])
     print(color_text(f"    Sufijos: {', '.join(sufijos) if sufijos else '(ninguno)'}", COLOR_CYAN))
+    patrones = options.get("patterns", [])
+    if patrones:
+        print(color_text(f"    Patrones: {', '.join(patrones)}", COLOR_CYAN))
     print()
     while True:
         print(color_text(f"  ENTER = Generar  |  R = Volver a empezar", COLOR_YELLOW))
