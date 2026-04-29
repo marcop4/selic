@@ -627,10 +627,10 @@ class SelicGUI:
                 p_iter = generate_from_patterns(config["patterns"], char_pool, config["min_length"], config["max_length"])
                 candidate_iterables.append(p_iter)
             
-            # Si no hay patrones, usar generador normal por capas
-            if not candidate_iterables:
-                 p_iter = generate_tiered_variants(social_tokens, options, tier=1) # Usar tier según agresividad
-                 candidate_iterables.append(p_iter)
+            # Inyectar variantes normales por capas según agresividad
+            agr = config.get("agresividad", 4)
+            for t in range(1, agr + 1):
+                candidate_iterables.append(generate_tiered_variants(social_tokens, options, tier=t))
 
             progress_state = {"generated": 0, "current": ""}
             

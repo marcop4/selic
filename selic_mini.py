@@ -300,7 +300,8 @@ def main():
         "numeric_parts": [],
         "allow_extreme_generation": False,
         "extreme_generation_limit": 5000000000,
-        "patterns": options_patterns
+        "patterns": options_patterns,
+        "hash_mode": "base" if options_patterns else "all"
     }
     
     options = ask_config(options)
@@ -334,7 +335,7 @@ def main():
     candidate_iterables = []
     
     # Inyectar Patrones si existen
-    char_pool = build_char_pool("all", base_tokens, options)
+    char_pool = build_char_pool(options.get("hash_mode", "all"), base_tokens, options)
     if options.get("patterns"):
         candidate_iterables.append(generate_from_patterns(
             options["patterns"], char_pool, min_length, max_length
