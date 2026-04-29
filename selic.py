@@ -541,7 +541,7 @@ def prompt_interactive(defaults=None):
                 break
                 
     # Resolver path usando la nueva lógica compartida
-    params["output_file"] = resolve_output_path(params["output_file"], "cli", params.get("base_dir"))
+    params["output_file"] = resolve_output_path(params["output_file"], "pro", params.get("base_dir"))
     print_question("18", f"¿Usar patrones avanzados? (*, %, @, ,, ?, #) [{color_text('s/N', COLOR_GREEN)}]")
     print(f"    Ejemplos: {color_text('7***C', COLOR_ORANGE)}, {color_text('*%?*', COLOR_ORANGE)}, {color_text('Nombre*!', COLOR_ORANGE)}")
     print("    Cada marcador (*, %, @, ,, ?, #) es un marcador de posición.")
@@ -823,7 +823,7 @@ def build_config_from_args(args, defaults=None):
     defaults = defaults or {}
     base_dir = args.base_dir or defaults.get("base_dir") or None
     dict_file = args.dict if args.dict != DEFAULT_DICT_FILE or defaults.get("dict_file") is None else defaults.get("dict_file")
-    output_file = resolve_output_path(args.output or defaults.get("output_file"), "cli", base_dir)
+    output_file = resolve_output_path(args.output or defaults.get("output_file"), "pro", base_dir)
     return {
         "name": args.name or defaults.get("name"),
         "color": args.color or defaults.get("color"),
