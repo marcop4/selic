@@ -256,6 +256,11 @@ def main():
             max_length = int(max_len_input)
             break
         print(color_text(f"[!] Error: Debe ser un número mayor o igual a {min_length}.", COLOR_MAGENTA))
+    
+    while True:
+        out_input = input(color_text(">> Nombre del archivo de salida (ENTER = passlist): ", COLOR_GREEN)).strip()
+        options["output_file"] = out_input
+        break
     print()
     
     # Soporte de Patrones
@@ -340,7 +345,7 @@ def main():
         for t in range(1, agr + 1):
             candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, count_limit=None, max_length=max_length))
     
-    output_file = "mini_output.txt"
+    output_file = resolve_output_path(options.get("output_file"), "mini")
     
     stop_event = threading.Event()
     progress_state = {"current": None, "generated": 0}

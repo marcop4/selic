@@ -50,6 +50,34 @@ def color_text(text, color_code):
         return text
     return f"{color_code}{text}\033[0m"
 
+def resolve_output_path(file_name, mode, base_dir=None):
+    """
+    Resuelve el path de salida inyectando la extensión .txt y el sufijo de modo.
+    Por defecto usa la carpeta 'wordlists' si base_dir no se especifica.
+    """
+    if not file_name:
+        file_name = f"passlist_{mode}.txt"
+        
+    if not file_name.lower().endswith(".txt"):
+        file_name += ".txt"
+        
+    name, ext = os.path.splitext(file_name)
+    if not name.endswith(f"_{mode}"):
+        file_name = f"{name}_{mode}{ext}"
+        
+    if not base_dir:
+        base_dir = "wordlists"
+        
+    if not os.path.exists(base_dir):
+        try:
+            os.makedirs(base_dir)
+        except Exception:
+            base_dir = "."
+            
+    if os.path.isabs(file_name):
+        return file_name
+    return os.path.join(base_dir, file_name)
+
 def split_words(value):
     tokens = set()
     if not value:

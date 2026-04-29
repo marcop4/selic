@@ -379,7 +379,8 @@ class SelicGUI:
         out_f = ttk.Frame(out_card, style="Card.TFrame")
         out_f.pack(fill="x", pady=5)
         
-        self.output_path_var = tk.StringVar(value=os.path.join(os.getcwd(), "selic_wordlist.txt"))
+        os.makedirs("wordlists", exist_ok=True)
+        self.output_path_var = tk.StringVar(value=os.path.abspath(os.path.join("wordlists", "passlist_gui.txt")))
         
         # Primero el botón Buscador para que no sea empujado
         tk.Button(out_f, text="Buscador", command=self.browse_output, bg="#222", fg=self.accent_color,
@@ -531,8 +532,10 @@ class SelicGUI:
         return True, ""
 
     def browse_output(self):
+        os.makedirs("wordlists", exist_ok=True)
         f = filedialog.asksaveasfilename(defaultextension=".txt", 
-                                        initialfile="selic_wordlist.txt",
+                                        initialfile="passlist_gui.txt",
+                                        initialdir=os.path.abspath("wordlists"),
                                         title="Seleccionar destino de la wordlist")
         if f:
             self.output_path_var.set(f)
@@ -545,7 +548,9 @@ class SelicGUI:
             self._dark_dialog("Error", f"Error al leer configuración:\n{e}", "error")
             return
 
-        output_file = self.output_path_var.get()
+        raw_output = self.output_path_var.get()
+        output_file = resolve_output_path(raw_output, "gui")
+        self.output_path_var.set(output_file)
         if not output_file:
             self._dark_dialog("Atención", "Por favor, elige un destino para el archivo.", "warning")
             return
