@@ -242,7 +242,9 @@ class SelicGUI:
         target_card = ttk.Frame(top_grid, style="Card.TFrame", padding=15)
         target_card.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         
-        ttk.Label(target_card, text="DATOS DEL OBJETIVO", style="Sub.TLabel").pack(anchor="w", pady=(0, 10))
+        ttk.Label(target_card, text="DATOS DEL OBJETIVO", style="Sub.TLabel").pack(anchor="w", pady=(0, 2))
+        ttk.Label(target_card, text="Separa con comas para múltiples valores (Ej: Juan, pepe | 19/06/2003, 2010, 18-08-2004)", 
+                  foreground=self.muted_color, font=("Segoe UI", 8, "italic")).pack(anchor="w", pady=(0, 10))
         
         self.entries = {}
         fields = [

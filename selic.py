@@ -408,9 +408,9 @@ def prompt_interactive(defaults=None):
     print_question("05", "Nombre del papá/mamá u otro familiar cercano")
     default_family_name = defaults.get("family_name")
     if default_family_name is not None:
-        print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_family_name))}")
+        print(f"    ENTER = omitir | predeterminado: {get_default_label(format_default_value(default_family_name))} | Separa con comas")
     else:
-        print("    (Ej: Juan, María, hermano, hermana) | ENTER = omitir")
+        print("    (Ej: Juan, Maria, Luis) | Separa con comas | ENTER = omitir")
     user_input = input("    > ").strip()
     params["family_name"] = user_input if user_input else default_family_name
     print_question("06", "Fecha(s) de nacimiento de padres o hermanos (DD/MM/YYYY, DD-MM-YYYY o solo año)")

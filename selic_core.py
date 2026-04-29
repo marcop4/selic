@@ -120,6 +120,9 @@ def validate_date(date_str):
         if not (1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2100):
             return False
         days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        # Ajuste para bisiestos
+        if month == 2 and (year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)):
+            return day <= 29
         return day <= days_in_month[month - 1]
     return False
 
@@ -307,18 +310,19 @@ def decompose_number(num_str):
     return fragments
 
 def collect_social_tokens(params, dictionary_words, options):
-    normalized = set()
-    numeric_parts = set()
+    normalized = []
+    numeric_parts = []
 
     def process_value(value, should_decompose):
         remove_acc = options.get("remove_accents_flag", True)
         use_seps = options.get("use_separators", False)
-        normalized.update(normalize_token(value, should_decompose, remove_acc, use_seps))
-        for token in normalize_token(value, should_decompose, remove_acc, use_seps):
+        tokens = normalize_token(value, should_decompose, remove_acc, use_seps)
+        normalized.extend(tokens)
+        for token in tokens:
             if token.isdigit():
-                numeric_parts.add(token)
+                numeric_parts.append(token)
                 if should_decompose:
-                    numeric_parts.update(decompose_number(token))
+                    numeric_parts.extend(decompose_number(token))
 
     for key in ("name", "color", "birth_year", "year", "family_name", "family_years", "team", "birth_place", "living_city", "dni", "pet", "singer"):
         value = params.get(key)
@@ -344,13 +348,28 @@ def collect_social_tokens(params, dictionary_words, options):
 
     for word in dictionary_words:
         remove_acc = options.get("remove_accents_flag", True)
-        normalized.add(word)
-        normalized.update(normalize_token(word, False, remove_acc))
+        normalized.append(word)
+        normalized.extend(normalize_token(word, False, remove_acc))
         if word.isdigit():
-            numeric_parts.add(word)
+            numeric_parts.append(word)
 
-    normalized = {token for token in normalized if len(token) > 1}
-    return sorted(normalized), sorted(numeric_parts)
+    # HEURÍSTICA: Mantener el orden de importancia (Nombre > Otros datos)
+    # Eliminamos duplicados manteniendo el orden original
+    final_normalized = []
+    seen_norm = set()
+    for token in normalized:
+        if token not in seen_norm and len(token) > 1:
+            final_normalized.append(token)
+            seen_norm.add(token)
+
+    final_numeric = []
+    seen_num = set()
+    for num in numeric_parts:
+        if num not in seen_num:
+            final_numeric.append(num)
+            seen_num.add(num)
+
+    return final_normalized, final_numeric
 
 def _case_variants(token, options):
     variants = set()
@@ -1019,9 +1038,10 @@ def generate_from_patterns(patterns, char_pool, min_length, max_length, count_li
     if not patterns:
         return
     
-    # Crear un charset único a partir de todos los caracteres presentes en los tokens sociales
-    # Esto permite el uso del nuevo marcador '*' (un solo carácter de tus datos)
-    social_chars = sorted(list(set("".join(char_pool))))
+    # HEURÍSTICA: En lugar de ordenar alfabéticamente (sorted), mantenemos el orden de 
+    # aparición original de los tokens. Los primeros tokens (ej: Nombre) tendrán prioridad.
+    # Usamos dict.fromkeys para eliminar duplicados manteniendo el orden.
+    social_chars = list(dict.fromkeys("".join(char_pool)))
     
     # Definición de bolsas de caracteres para cada marcador
     MARKER_POOLS = {

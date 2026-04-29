@@ -20,6 +20,9 @@
 - **Patrones en Mini**: Soporte completo para patrones avanzados (*, #, %, @...) en `selic_mini.py`.
 - **Nuevos Campos GUI**: Fecha de nacimiento y selectores de longitud mín/máx integrados.
 - **Botones de Ayuda [?]**: Documentación contextual dentro de la interfaz gráfica.
+- **Priorización Heurística (Global)**: El sistema ahora "sabe" qué datos son más importantes (Nombre > Otros Datos). Las contraseñas más probables aparecen al principio de la wordlist, optimizando el tiempo de ataque.
+- **Creación de Carpetas Automática**: SELIC ahora crea recursivamente cualquier directorio de salida que no exista (ej: `wordlists/`), eliminando la necesidad de gestionar carpetas manualmente.
+- **Identidad de Salida (`_pro`, `_mini`, `_gui`)**: Nomenclatura automática de archivos según la interfaz usada para evitar colisiones de datos.
 
 ### Mejorado
 - **Estética Cyber-Dark GUI**: Diálogos oscuros, scrollbars estilizadas y aislamiento de scroll principal para una mejor experiencia de usuario.
@@ -31,6 +34,8 @@
 - **Lógica de Mezcla**: La complejidad 2 ahora permite "Mezcla de Parejas" por defecto en modo automático.
 - **DNI/Documentos**: Soporte para documentos alfanuméricos y mejores fragmentaciones.
 - **Detección de Ñ**: Soporte nativo para caracteres especiales hispanos.
+- **Sincronización `selic.cfg` en Mini**: La versión ligera ahora lee y respeta la configuración global (sufijos, longitudes, etc.).
+- **UX Quirúrgica**: Instrucciones aclaratorias en el asistente CLI sobre extensiones automáticas y manejo de directorios.
 
 ### Corregido
 - Eliminadas inyecciones hardcodeadas de `"2024"` y `["123", "2024", "2025"]` en `selic_core.py` que ignoraban la configuración del usuario.

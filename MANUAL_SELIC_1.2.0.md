@@ -131,9 +131,25 @@ Cualquier cosa que escribas que no sea un marcador se quedará tal cual.
 *   Ejemplo: `*%?*` -> `M3!a` (Letra+Núm+Símbolo+Letra).
 *   Ejemplo: `V#9` -> `VMarco9`, `V20029`.
 
+### Prioridad Heurística (Modo Inteligente)
+A partir de la versión 1.2.0, SELIC utiliza un algoritmo de **Prioridad Social**:
+*   Los caracteres y palabras que provienen de los **datos principales** (Nombre, Apodo) se procesan **antes** que los datos secundarios.
+*   **Resultado:** Si detienes la generación a la mitad, es muy probable que las contraseñas con mayor tasa de éxito ya se hayan guardado al principio del archivo.
+
 ---
 
-## 🛡️ 7. Sistemas de Seguridad (Protección de Hardware)
+## 📂 7. Gestión de Archivos y Carpetas
+
+### Creación Automática
+Ya no es necesario crear carpetas manualmente antes de ejecutar SELIC.
+*   Si defines una ruta de salida como `wordlists/resultado.txt`, SELIC detectará si la carpeta `wordlists` existe.
+*   Si no existe, la creará de forma **recursiva** (creará todas las carpetas necesarias en la ruta).
+
+### Identificadores de Versión
+Para evitar que una versión sobrescriba el trabajo de otra, SELIC añade automáticamente un sufijo al archivo si no especificas uno:
+*   `selic.py` -> `_pro.txt`
+*   `selic_mini.py` -> `_mini.txt`
+*   `selic_gui.py` -> `_gui.txt`
 SELIC 1.2.0 incluye tres capas de seguridad para evitar que dañes tu sistema o llenes tu disco por error:
 
 ### A. El "Freno Absurdo" (Seguro de Usuario)
