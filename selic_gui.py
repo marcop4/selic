@@ -580,7 +580,16 @@ class SelicGUI:
         summary += f"Patrones:  {', '.join(patrones) if patrones else '(ninguno)'}\n\n"
 
         summary += f"Complejidad:  {config.get('complexity', 2)}\n"
-        summary += f"Mezcla:  {config.get('mezcla', 'auto')}\n"
+        mezcla_val = config.get('mezcla', 'auto')
+        if mezcla_val == "auto":
+            comp = config.get("complexity", 2)
+            if comp <= 1: actual = 1
+            elif comp <= 3: actual = 2
+            elif comp == 4: actual = 3
+            else: actual = 4
+            mezcla_val = f"Auto (Nivel {actual})"
+        
+        summary += f"Mezcla:  {mezcla_val}\n"
         summary += f"Longitud:  {config.get('min_length', 4)} - {config.get('max_length', 32)}\n"
         summary += f"Salida:  {output_file}\n\n"
 

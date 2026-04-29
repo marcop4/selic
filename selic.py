@@ -676,7 +676,10 @@ def prompt_interactive(defaults=None):
     print(f"  {color_text('Descomponer documento:', COLOR_YELLOW)} {'Sí' if doc_decompose else 'No'}")
     print(f"  {color_text('Complejidad:', COLOR_YELLOW)} {color_text(str(params.get('complexity', 2)), COLOR_GREEN)}")
     print(f"  {color_text('Agresividad:', COLOR_YELLOW)} {color_text(str(params.get('agresividad', 4)), COLOR_GREEN)}")
-    print(f"  {color_text('Mezcla:', COLOR_YELLOW)} {color_text(str(params.get('mezcla', 'auto')), COLOR_GREEN)}")
+    mezcla_val = str(params.get('mezcla', 'auto'))
+    if mezcla_val == "auto":
+        mezcla_val = f"Auto (Nivel {actual_max_combo})"
+    print(f"  {color_text('Mezcla:', COLOR_YELLOW)} {color_text(mezcla_val, COLOR_GREEN)}")
     print(f"  {color_text('RAM dedup:', COLOR_YELLOW)} {color_text(str(params.get('max_ram', 3)) + ' GB', COLOR_GREEN)}")
     print()
     while True:
