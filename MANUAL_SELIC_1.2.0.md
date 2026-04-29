@@ -100,45 +100,36 @@ Las contraseñas que añadas aquí se **sumarán** a la lista interna del sistem
 
 ---
 
-## 🎯 6. Patrones Avanzados (Estilo Crunch)
+## 🎯 6. Patrones Quirúrgicos (Estilo Crunch)
 
-### ¿Qué son?
-Los patrones te permiten definir **estructuras fijas** de contraseña donde cada marcador representa **una sola posición de carácter**. Funcionan de manera similar a la herramienta Crunch de Kali Linux.
+Esta es la función más avanzada de SELIC. Te permite definir la **estructura exacta** de la contraseña cuando tienes una sospecha clara.
 
-### Marcadores disponibles
+### El Modo Quirúrgico
+Cuando ingresas al menos un patrón, SELIC activa el **Modo Quirúrgico**:
+*   Se ignora la generación automática por capas (Niveles 1-4) para evitar llenar el archivo de "ruido".
+*   El motor se enfoca **100% en tus patrones** y en las contraseñas comunes por defecto.
 
-| Marcador | Significado | Pool de caracteres |
-| :---: | :--- | :--- |
-| `#` | 1 carácter del pool social (tus datos) | Caracteres individuales de tus datos |
-| `%` | 1 número | 0-9 |
-| `@` | 1 letra minúscula | a-z |
-| `,` | 1 letra MAYÚSCULA | A-Z |
-| `?` | 1 símbolo especial | !@#$%^&*_+-= |
+### Marcadores Disponibles
+| Marcador | Tipo | Descripción | Ejemplo (`*` o `#`) |
+| :--- | :--- | :--- | :--- |
+| **`*`** | Carácter | **Un solo carácter** sacado de tus datos sociales. | `V***` -> `VMar`, `VJos` |
+| **`%`** | Carácter | Un número (0-9). | `pass%%` -> `pass01`, `pass99` |
+| **`@`** | Carácter | Una letra minúscula (a-z). | `id@@` -> `idaa`, `idzz` |
+| **`,`** | Carácter | Una letra MAYÚSCULA (A-Z). | `VIP,,` -> `VIPAA`, `VIPZZ` |
+| **`?`** | Carácter | Un símbolo especial (!@#$...). | `key?` -> `key!`, `key@` |
+| **`#`** | **Token** | **Dato social ENTERO** (La palabra completa). | `V#SH` -> `VMarcoSH`, `V2002SH` |
+| **`\\`** | Escape | Usa un marcador como texto literal. | `val\\%` -> `val%` |
 
-### Texto fijo en patrones
-Todo lo que **no sea** un marcador se mantiene como texto literal:
-```
-IV%%%CO  →  IV000CO, IV001CO, IV002CO... IV999CO
-V#9      →  Va9, Vb9, Vc9... (usando caracteres de tus datos)
-```
+### Diferencia clave: `*` vs `#`
+*   Usa **`*`** si quieres que la contraseña tenga una **longitud exacta** (ej: `****` siempre serán 4 caracteres).
+    *   **Nota:** El marcador `*` solo usa letras/números presentes en tus datos sociales.
+*   Usa **`#`** si quieres **combinar palabras** sin importar cuánto midan (ej: `#_#` para `Nombre_Apellido`).
 
-### Escape de marcadores
-Si necesitas usar un marcador como texto literal, pon `\` delante:
-```
-precio\?%%%  →  precio?000, precio?001... precio?999
-```
-El `\?` se trata como el carácter `?` literal, no como un marcador de símbolo.
-
-### Múltiples patrones
-Puedes ingresar **varios patrones** a la vez:
-*   **CLI Normal:** Se te preguntará patrón por patrón. Presiona ENTER sin escribir para terminar.
-*   **GUI:** Escribe un patrón por línea (presiona Enter para separar líneas).
-
-### ¿Qué ignora el patrón?
-Los patrones son "autoritarios": **no** aplican Leet Speak, sufijos, complejidad ni mezcla. Generan la estructura exacta que definiste. Sin embargo, el motor heurístico normal sigue funcionando en paralelo y genera sus propias contraseñas con todas las reglas activas.
-
-### Validación
-Si un patrón no contiene al menos un marcador válido, SELIC mostrará un error antes de generar para evitar resultados inesperados.
+### Texto Fijo
+Cualquier cosa que escribas que no sea un marcador se quedará tal cual.
+*   Ejemplo: `admin*2026` -> `adminM2026`, `admina2026`, etc.
+*   Ejemplo: `*%?*` -> `M3!a` (Letra+Núm+Símbolo+Letra).
+*   Ejemplo: `V#9` -> `VMarco9`, `V20029`.
 
 ---
 
@@ -155,7 +146,6 @@ Antes de empezar, SELIC calcula el peso estimado del archivo y lo compara con tu
 
 ### C. Freno de Pánico de 5GB (Real-Time)
 Si durante la generación tu disco llega a tener menos de **5 GB libres**, SELIC detendrá la escritura inmediatamente.
-*   **Objetivo:** Evitar que el sistema operativo se congele o se corrompa por falta de espacio.
 
 ---
 
@@ -163,7 +153,6 @@ Si durante la generación tu disco llega a tener menos de **5 GB libres**, SELIC
 
 ### A. Diagnóstico Dinámico (CLI)
 Cuando terminas de ingresar datos, SELIC analiza la complejidad de tus ajustes y te recomienda un **Nivel de Agresividad**. 
-*   No tienes que adivinar: el sistema te dirá si tu configuración es "Social Medium" o "Extreme".
 
 ### B. Medidor de Bloques (GUI)
 La interfaz gráfica incluye un indicador de 4 bloques (estilo batería):
@@ -172,17 +161,9 @@ La interfaz gráfica incluye un indicador de 4 bloques (estilo batería):
 *   **Naranja**: Nivel 3 - Ataque profundo de ingeniería social.
 *   **Rojo**: Nivel 4 - Ataque crítico/exhaustivo (Wordlist muy pesada).
 
-### C. Resumen de Confirmación
-Antes de generar, las tres interfaces muestran un **resumen completo** de toda la configuración:
-*   **CLI Normal:** Resumen en texto con opción de `ENTER` para generar o `R` para reiniciar la configuración (tus respuestas previas se mantienen como defaults).
-*   **Mini:** Resumen con opción de `ENTER` para generar o `R` para volver a empezar desde cero.
-*   **GUI:** Diálogo emergente con Sí/No que lista todos los parámetros antes de lanzar la generación.
-
 ---
 
 ## 📁 9. Archivo de Configuración (`selic.cfg`)
-Puedes personalizar todo el comportamiento:
-
 | Variable | Descripción |
 | :--- | :--- |
 | `default_suffixes` | Sufijos base que SELIC usa por defecto (ej: `123, 2026, 2025`). |
@@ -195,3 +176,8 @@ Puedes personalizar todo el comportamiento:
 
 ---
 *Manual actualizado para la versión 1.2.0 — Sufijos Dinámicos, Patrones Crunch y Diagnóstico Asistido.*
+
+---
+
+## 📜 Disclaimer
+*Esta herramienta ha sido creada con fines educativos y de auditoría profesional. El uso de SELIC para atacar infraestructuras sin autorización previa es ilegal y responsabilidad exclusiva del usuario final.*

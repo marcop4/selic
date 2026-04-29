@@ -270,14 +270,16 @@ def main():
     pattern = args.pattern
     if not pattern:
         print(color_text("\n[ Patrones Avanzados ]", COLOR_YELLOW))
-        print(color_text("  Marcadores disponibles:", COLOR_CYAN))
-        print(color_text("    # : Datos sociales (Nombres, DNI, Años...)", COLOR_GREEN))
+        print(color_text("  Marcadores disponibles (estilo Crunch):", COLOR_CYAN))
+        print(color_text("    * : Un carácter de tus datos (ej: 'M' de Marco)", COLOR_GREEN))
         print(color_text("    % : Números (0-9)", COLOR_GREEN))
         print(color_text("    @ : Letras minúsculas (a-z)", COLOR_GREEN))
         print(color_text("    , : Letras MAYÚSCULAS (A-Z)", COLOR_GREEN))
         print(color_text("    ? : Símbolos especiales (!@#$...)", COLOR_GREEN))
-        print(color_text("    \\ : Carácter literal (ej: \\# para un '#' real)", COLOR_GREEN))
-        print(color_text("\n>> ¿Desea usar patrones avanzados? (Ej: #%?2026 | ENTER = No)", COLOR_CYAN))
+        print(color_text("    # : Datos sociales ENTEROS (ej: 'Marco' completo)", COLOR_GREEN))
+        print(color_text("    \\ : Carácter literal (ej: \\* para un '*' real)", COLOR_GREEN))
+        print(color_text("\n    NOTA: El marcador * solo usa caracteres presentes en tus datos.", COLOR_YELLOW))
+        print(color_text("\n>> ¿Desea usar patrones avanzados? (Ej: *%?* | ENTER = No)", COLOR_CYAN))
         pattern = input(color_text("   > ", COLOR_GREEN)).strip()
     
     options_patterns = [pattern] if pattern else []

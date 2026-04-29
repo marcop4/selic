@@ -12,7 +12,9 @@ Esta versión marca un hito en la evolución de SELIC, pasando de un script úni
 *   **📊 Estimador Pro-Activo:** Cálculo real del tamaño del wordlist antes de iniciar la generación.
 *   **✨ Sufijos Dinámicos**: Los sufijos (`123, 2026, 2025`) ahora se gestionan desde `selic.cfg`. Puedes cambiarlos, ampliarlos o desactivarlos escribiendo `ninguno`.
 *   **🛡️ Contraseñas Comunes Extra**: Nueva variable `extra_common_passwords` en `selic.cfg` para ampliar la lista interna sin tocar código.
-*   **🛠️ Patrones Documentados**: El botón `[?]` ahora explica texto fijo, escape con `\`, múltiples patrones y el estilo Crunch.
+*   **🎯 Modo Quirúrgico (Patrones):** Nueva lógica donde los patrones tienen prioridad absoluta. Si usas patrones, SELIC se enfoca solo en ellos (estilo Crunch), evitando el ruido de la generación automática.
+*   **✨ Marcadores Evolucionados:** Se incorpora el marcador `*` (un solo carácter de tus datos) para una precisión de longitud total, mientras `#` se mantiene para bloques de datos enteros.
+*   **🛠️ Patrones Documentados**: El botón `[?]` ahora explica el uso de `*` vs `#`, texto fijo, escapes y múltiples patrones.
 *   **✅ Resumen de Confirmación**: Las 3 interfaces (CLI, Mini, GUI) muestran un resumen completo antes de generar, con opción de reiniciar la configuración.
 *   **🎨 Mejoras Visuales GUI**: Nueva interfaz Cyber-Dark, diálogos de confirmación oscuros personalizados, y validaciones reforzadas.
 

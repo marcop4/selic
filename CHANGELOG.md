@@ -13,12 +13,16 @@
 - **Documentación de Escape**: El botón `[?]` de patrones ahora explica texto fijo, escape con `\` y múltiples patrones por línea.
 - **Diagnóstico Dinámico (CLI/GUI)**: El sistema analiza tus ajustes y recomienda un nivel de agresividad óptimo.
 - **Medidor de Gravedad (GUI)**: Indicador visual por bloques (Verde a Rojo) que muestra el impacto de la configuración en tiempo real.
-- **Patrones en Mini**: Soporte completo para patrones avanzados (#, %, @...) en `selic_mini.py`.
+- **Modo Quirúrgico (Prioridad)**: Si se definen patrones, SELIC ahora da prioridad absoluta a estos (estilo Crunch), omitiendo la generación por capas estándar para evitar wordlists excesivas y centrarse en la precisión.
+- **Nuevo Marcador `*`**: Permite seleccionar **un solo carácter** de tus datos sociales (ej: 'M' de Marco) para patrones de longitud exacta.
+- **Marcador `#` Refinado**: Ahora se especializa en **datos sociales enteros** (ej: 'Marco' completo) para combinar conceptos rápidamente.
+- **Mutaciones en Patrones**: Los marcadores `*` y `#` ahora respetan las mutaciones activas (Leet, Caps, etc.) si el usuario lo desea.
+- **Patrones en Mini**: Soporte completo para patrones avanzados (*, #, %, @...) en `selic_mini.py`.
 - **Nuevos Campos GUI**: Fecha de nacimiento y selectores de longitud mín/máx integrados.
 - **Botones de Ayuda [?]**: Documentación contextual dentro de la interfaz gráfica.
 
 ### Mejorado
-- **Estética Cyber-Dark GUI**: Diálogos nativos oscuros, scrollbars estilizadas y barra de título integrada.
+- **Estética Cyber-Dark GUI**: Diálogos oscuros, scrollbars estilizadas y aislamiento de scroll principal para una mejor experiencia de usuario.
 - **Resumen CLI Normal**: Ahora incluye Nombre, Nacimiento, DNI y Sufijos en el resumen rápido.
 - **Resumen Mini**: Ahora muestra los sufijos configurados en la configuración final.
 - **Ayuda de Sufijos (GUI)**: El botón `[?]` ahora menciona la opción `ninguno` y la posibilidad de usar letras/símbolos.

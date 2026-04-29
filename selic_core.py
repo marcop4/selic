@@ -1019,13 +1019,18 @@ def generate_from_patterns(patterns, char_pool, min_length, max_length, count_li
     if not patterns:
         return
     
+    # Crear un charset único a partir de todos los caracteres presentes en los tokens sociales
+    # Esto permite el uso del nuevo marcador '*' (un solo carácter de tus datos)
+    social_chars = sorted(list(set("".join(char_pool))))
+    
     # Definición de bolsas de caracteres para cada marcador
     MARKER_POOLS = {
-        "#": char_pool,         # Social (Tus datos)
+        "*": social_chars,      # Un carácter de tus datos sociales (ej: 'M' de Marco)
         "%": DEFAULT_DIGITS,    # Números
         "@": DEFAULT_LOWER,     # Minúsculas
         ",": DEFAULT_UPPER,     # Mayúsculas
-        "?": DEFAULT_SPECIALS   # Símbolos
+        "?": DEFAULT_SPECIALS,  # Símbolos
+        "#": char_pool          # Datos sociales enteros (ej: 'Marco' completo)
     }
     
     generated = 0

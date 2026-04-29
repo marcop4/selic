@@ -542,29 +542,32 @@ def prompt_interactive(defaults=None):
                 
     # Resolver path usando la nueva lógica compartida
     params["output_file"] = resolve_output_path(params["output_file"], "cli", params.get("base_dir"))
-    print_question("18", f"¿Usar patrones avanzados? (#, %, @, ,, ?) [{color_text('s/N', COLOR_GREEN)}]")
-    print(f"    Ejemplos: {color_text('7###C', COLOR_ORANGE)}, {color_text('###@2026', COLOR_ORANGE)}, {color_text('Nombre##!', COLOR_ORANGE)}")
-    print("    Cada marcador (#, %, @, ,, ?) es un marcador de posición que se reemplaza por un solo carácter.")
-    print("    El patrón se completa carácter por carácter (estilo Crunch).")
-    print("    No se toma un grupo de marcadores como una palabra o fragmento entero.")
-    print(f"    Ej: {color_text('7####E', COLOR_ORANGE)} => 7 + 4 caracteres + E.")
+    print_question("18", f"¿Usar patrones avanzados? (*, %, @, ,, ?, #) [{color_text('s/N', COLOR_GREEN)}]")
+    print(f"    Ejemplos: {color_text('7***C', COLOR_ORANGE)}, {color_text('*%?*', COLOR_ORANGE)}, {color_text('Nombre*!', COLOR_ORANGE)}")
+    print("    Cada marcador (*, %, @, ,, ?, #) es un marcador de posición.")
+    print("    Los patrones permiten una precisión quirúrgica (estilo Crunch).")
+    print(f"    Ej: {color_text('7****E', COLOR_ORANGE)} => 7 + 4 caracteres de tus datos + E.")
     print("    Si quieres usar un dato literal (ej: un nombre), escríbelo directamente: 7MarcoE")
     print("\n    Marcadores disponibles:")
-    print(f"      {color_text('#', COLOR_CYAN)} : Datos sociales (tus nombres, años, etc.)")
+    print(f"      {color_text('*', COLOR_CYAN)} : Un solo carácter de tus datos (ej: 'M' de Marco)")
     print(f"      {color_text('%', COLOR_CYAN)} : Números (0-9)")
     print(f"      {color_text('@', COLOR_CYAN)} : Letras minúsculas (a-z)")
     print(f"      {color_text(',', COLOR_CYAN)} : Letras MAYÚSCULAS (A-Z)")
     print(f"      {color_text('?', COLOR_CYAN)} : Símbolos especiales (!@#$...)")
-    print(f"      {color_text('\\', COLOR_CYAN)} : Carácter literal (ej: \\# para un '#' real)")
+    print(f"      {color_text('#', COLOR_CYAN)} : Datos sociales ENTEROS (ej: 'Marco' completo)")
+    print(f"      {color_text('\\', COLOR_CYAN)} : Carácter literal (ej: \\* para un '*' real)")
     
     use_patterns = yes_no_input("    > ", default="n")
     patterns = []
     if use_patterns:
         print("\n    " + color_text("--- LEYENDA DE MARCADORES ---", COLOR_CYAN))
-        print(f"    {color_text('#', COLOR_CYAN)} : Tus datos sociales  | {color_text('%', COLOR_CYAN)} : Números (0-9)")
-        print(f"    {color_text('@', COLOR_CYAN)} : Minúsculas (a-z)    | {color_text(',', COLOR_CYAN)} : MAYÚSCULAS (A-Z)")
-        print(f"    {color_text('?', COLOR_CYAN)} : Símbolos (!@#$...)  | {color_text('\\', COLOR_CYAN)} : Literal (ej: \\#)")
+        print(f"    {color_text('*', COLOR_CYAN)} : Un carácter (tus datos) | {color_text('%', COLOR_CYAN)} : Números (0-9)")
+        print(f"    {color_text('@', COLOR_CYAN)} : Minúsculas (a-z)        | {color_text(',', COLOR_CYAN)} : MAYÚSCULAS (A-Z)")
+        print(f"    {color_text('?', COLOR_CYAN)} : Símbolos (!@#$...)      | {color_text('#', COLOR_CYAN)} : Datos sociales enteros")
+        print(f"    {color_text('\\', COLOR_CYAN)} : Literal (ej: \\*)         |")
         print("    -----------------------------\n")
+        print(f"    {color_text('NOTA:', COLOR_YELLOW)} El marcador * usa únicamente letras/números")
+        print("    que estén presentes en los datos sociales ingresados.\n")
         
         while True:
             print("    Ingresa patrón [ENTER para terminar]:")
@@ -765,6 +768,8 @@ def run_gui(args):
     while True:
         print(color_text("\n[+] Configuración de Patrones Avanzados", COLOR_CYAN))
         print(color_text("    Marcadores disponibles:", COLOR_YELLOW))
+        print(color_text("    \\ : Carácter literal (ej: \\* para un '*' real)", COLOR_GREEN))
+        print(color_text("    NOTA: El marcador * solo usa caracteres presentes en tus datos.", COLOR_YELLOW))
         print(f"    {color_text('#', COLOR_GREEN)} = Tus datos  {color_text('%', COLOR_GREEN)} = Números (0-9)  {color_text('@', COLOR_GREEN)} = Letras (a-z)")
         print(f"    {color_text(',', COLOR_GREEN)} = Letras (A-Z)  {color_text('?', COLOR_GREEN)} = Símbolos       {color_text('\\', COLOR_GREEN)} = Escape (ej: \\#)")
         print(color_text("    Ejemplo: IV#%?CO (Genera: IV + Dato + Núm + Símb + CO)", COLOR_CYAN))
@@ -975,21 +980,21 @@ def main():
     output_file = config.get("output_file", DEFAULT_OUTPUT_FILE)
     candidate_iterables = []
     try:
-    if config.get("patterns"):
-        # Modo Quirúrgico: Patrones
-        # Usamos "all" para que el marcador # incluya mutaciones (Leet, Caps, etc) si están activas
-        pattern_pool = build_char_pool("all", base_tokens, options)
-        pattern_candidates = generate_from_patterns(
-            config.get("patterns"), pattern_pool,
-            config["min_length"], config["max_length"], config.get("count"),
-            max_expansion=options.get("max_template_expansion")
-        )
-        candidate_iterables.append(pattern_candidates)
-    else:
-        # Modo Automático: Capas (Tier 1-4)
-        agr = config.get("agresividad", 4)
-        for t in range(1, agr + 1):
-            candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, config.get("count"), config["max_length"]))
+        if config.get("patterns"):
+            # Modo Quirúrgico: Patrones
+            # Usamos "all" para que el marcador # incluya mutaciones (Leet, Caps, etc) si están activas
+            pattern_pool = build_char_pool("all", base_tokens, options)
+            pattern_candidates = generate_from_patterns(
+                config.get("patterns"), pattern_pool,
+                config["min_length"], config["max_length"], config.get("count"),
+                max_expansion=options.get("max_template_expansion")
+            )
+            candidate_iterables.append(pattern_candidates)
+        else:
+            # Modo Automático: Capas (Tier 1-4)
+            agr = config.get("agresividad", 4)
+            for t in range(1, agr + 1):
+                candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, config.get("count"), config["max_length"]))
 
         if not config.get("patterns") and not config_has_social_info(config):
             print(color_text("No se proporcionó información de ingeniería social ni patrones. Se generará contenido básico desde el diccionario.", COLOR_MAGENTA))

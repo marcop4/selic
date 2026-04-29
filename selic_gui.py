@@ -84,16 +84,16 @@ class SelicGUI:
         
         # Centrar sobre la ventana principal
         dlg.update_idletasks()
-        dw, dh = 460, 340
+        dw, dh = 460, 420
         px = self.root.winfo_x() + (self.root.winfo_width() // 2) - (dw // 2)
         py = self.root.winfo_y() + (self.root.winfo_height() // 2) - (dh // 2)
         dlg.geometry(f"{dw}x{dh}+{px}+{py}")
         
         # Colores según tipo
         icon_colors = {"info": self.accent_color, "warning": self.orange, "error": self.red, "success": self.green}
-        icons = {"info": "ℹ", "warning": "⚠", "error": "✕", "success": "✓"}
+        icons = {"info": "ⓘ", "warning": "⚠", "error": "✖", "success": "✔"}
         color = icon_colors.get(dialog_type, self.accent_color)
-        icon = icons.get(dialog_type, "ℹ")
+        icon = icons.get(dialog_type, "ⓘ")
         
         # Barra superior con color
         bar = tk.Frame(dlg, bg=color, height=3)
@@ -110,13 +110,21 @@ class SelicGUI:
         tk.Label(head_f, text=title, font=("Segoe UI", 13, "bold"), fg="#ffffff", bg="#0e0e0e").pack(side="left")
         
         # Mensaje scrollable
-        msg_frame = tk.Frame(body, bg="#141414", padx=12, pady=10)
+        msg_frame = tk.Frame(body, bg="#141414", padx=2, pady=2)
         msg_frame.pack(fill="both", expand=True)
+        
         msg_label = tk.Text(msg_frame, wrap="word", font=("Segoe UI", 9), fg="#cccccc", bg="#141414",
-                           relief="flat", height=8, cursor="arrow", borderwidth=0)
+                           relief="flat", height=10, cursor="arrow", borderwidth=0,
+                           padx=10, pady=10)
+        
+        scrollbar = tk.Scrollbar(msg_frame, orient="vertical", command=msg_label.yview,
+                                 bg="#141414", troughcolor="#0e0e0e", borderwidth=0, width=10)
+        scrollbar.pack(side="right", fill="y")
+        
+        msg_label.config(yscrollcommand=scrollbar.set)
         msg_label.insert("1.0", message)
         msg_label.config(state="disabled")
-        msg_label.pack(fill="both", expand=True)
+        msg_label.pack(side="left", fill="both", expand=True)
         
         # Botones
         btn_f = tk.Frame(body, bg="#0e0e0e")
@@ -127,21 +135,15 @@ class SelicGUI:
         def on_yes():
             result["value"] = True
             dlg.destroy()
-        def on_no():
-            result["value"] = False
-            dlg.destroy()
-        
+            
         if yes_no:
-            no_btn = tk.Button(btn_f, text="CANCELAR", command=on_no, bg="#222", fg="#aaa",
-                              font=("Segoe UI", 10, "bold"), relief="flat", padx=20, pady=6, cursor="hand2")
-            no_btn.pack(side="right", padx=(5, 0))
-            yes_btn = tk.Button(btn_f, text="CONFIRMAR", command=on_yes, bg=color, fg="black",
-                               font=("Segoe UI", 10, "bold"), relief="flat", padx=20, pady=6, cursor="hand2")
-            yes_btn.pack(side="right")
+            tk.Button(btn_f, text="ACEPTAR", command=on_yes, bg=self.accent_color, fg="black", 
+                     font=("Segoe UI", 9, "bold"), relief="flat", width=12, pady=6, cursor="hand2").pack(side="right", padx=5)
+            tk.Button(btn_f, text="CANCELAR", command=dlg.destroy, bg="#222", fg="#888", 
+                     font=("Segoe UI", 9), relief="flat", width=12, pady=6, cursor="hand2").pack(side="right")
         else:
-            ok_btn = tk.Button(btn_f, text="ENTENDIDO", command=dlg.destroy, bg=color, fg="black",
-                              font=("Segoe UI", 10, "bold"), relief="flat", padx=25, pady=6, cursor="hand2")
-            ok_btn.pack(side="right")
+            tk.Button(btn_f, text="ENTENDIDO", command=dlg.destroy, bg=self.accent_color, fg="black", 
+                     font=("Segoe UI", 9, "bold"), relief="flat", width=20, pady=8, cursor="hand2").pack(side="bottom", pady=5)
         
         dlg.wait_window()
         return result["value"]
@@ -363,7 +365,7 @@ class SelicGUI:
         ttk.Label(p_head, text="PATRONES QUIRÚRGICOS", style="Sub.TLabel").pack(side="left")
         tk.Button(p_head, text="?", command=self.show_pattern_help, bg="#222", fg=self.accent_color, relief="flat", bd=0).pack(side="right")
         
-        self.pattern_placeholder = "Ej: #%?#  (1 patrón por línea, vacío = sin patrones)"
+        self.pattern_placeholder = "Ej: *%?*  (1 patrón por línea, vacío = sin patrones)"
         self.pattern_text = tk.Text(patt_card, height=2, bg="#000", fg="#555", 
                                    insertbackground="white", font=("Consolas", 10), relief="flat")
         self.pattern_text.pack(fill="x", pady=(5, 0), padx=10)
@@ -437,7 +439,9 @@ class SelicGUI:
         self.canvas.itemconfig(self.canvas_window, width=event.width)
 
     def _on_mousewheel(self, event):
-        # Scroll con la rueda del ratón
+        # Evitar scroll si hay una ventana emergente activa (grab_set)
+        if self.root.grab_current():
+            return
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def show_complexity_help(self):
@@ -468,16 +472,21 @@ class SelicGUI:
 
     def show_pattern_help(self):
         msg = ("GUÍA DE PATRONES (Estilo Crunch)\n\n"
-               "Cada marcador = 1 posición de carácter:\n"
-               "  #  → 1 carácter del pool social (tus datos)\n"
+               "Marcadores disponibles:\n"
+               "  *  → 1 carácter de tus datos (ej: 'M' de Marco)\n"
                "  %  → 1 número (0-9)\n"
                "  @  → 1 letra minúscula (a-z)\n"
-               "  ,   → 1 letra MAYÚSCULA (A-Z)\n"
-               "  ?   → 1 símbolo especial (!@#$...)\n\n"
+               "  ,  → 1 letra MAYÚSCULA (A-Z)\n"
+               "  ?  → 1 símbolo especial (!@#$...)\n"
+               "  #  → Datos sociales ENTEROS (ej: 'Marco' completo)\n\n"
                "TEXTO FIJO: Todo lo que NO sea un marcador\n"
                "se mantiene literal en la contraseña.\n"
-               "  Ej: IV%%%CO → IV000CO, IV001CO... IV999CO\n"
-               "  Ej: V#9 → Va9, Vb9, Vc9...\n\n"
+               "  Ej: V***%? → V + 3 letras + número + símbolo.\n"
+               "  Ej: V#9    → V + 'Marco' + 9\n"
+               "  Ej: *%?*   → Letra + Número + Símbolo + Letra.\n"
+               "  Ej: #_#    → 'Marco' + _ + '2002'\n\n"
+               "OBSERVACIÓN: El marcador * usa únicamente letras/números\n"
+               "que estén presentes en los datos sociales ingresados.\n\n"
                "MÚLTIPLES PATRONES: Escribe 1 patrón por\n"
                "línea (presiona Enter para separar).\n\n"
                "ESCAPE: Si quieres usar un marcador como\n"
@@ -509,7 +518,7 @@ class SelicGUI:
 
     def validate_patterns(self, patterns):
         """Valida los patrones ingresados. Retorna (ok, mensaje_error)."""
-        valid_markers = {"#", "%", "@", ",", "?"}
+        valid_markers = {"*", "#", "%", "@", ",", "?"}
         for i, pattern in enumerate(patterns, 1):
             if not pattern:
                 continue
@@ -701,10 +710,16 @@ class SelicGUI:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    # Centrar en pantalla
+    # Centrar en pantalla de forma segura
     w, h = 950, 720
-    x = (root.winfo_screenwidth()/2) - (w/2)
-    y = (root.winfo_screenheight()/2) - (h/2)
-    root.geometry(f"{w}x{h}+{int(x)}+{int(y)}")
+    try:
+        screen_w = root.winfo_screenwidth()
+        screen_h = root.winfo_screenheight()
+        x = max(0, int((screen_w/2) - (w/2)))
+        y = max(0, int((screen_h/2) - (h/2)))
+        root.geometry(f"{w}x{h}+{x}+{y}")
+    except:
+        root.geometry(f"{w}x{h}+50+50")
+    
     SelicGUI(root)
     root.mainloop()
