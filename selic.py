@@ -556,6 +556,7 @@ def prompt_interactive(defaults=None):
     print(f"      {color_text('?', COLOR_CYAN)} : Símbolos especiales (!@#$...)")
     print(f"      {color_text('#', COLOR_CYAN)} : Datos sociales ENTEROS (ej: 'Marco' completo)")
     print(f"      {color_text('\\', COLOR_CYAN)} : Carácter literal (ej: \\* para un '*' real)")
+    print(color_text("\n    NOTA: El marcador * solo usa caracteres presentes en tus datos.", COLOR_YELLOW))
     
     use_patterns = yes_no_input("    > ", default="n")
     patterns = []

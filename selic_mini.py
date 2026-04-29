@@ -47,7 +47,7 @@ def parse_mini_input(user_input):
         tokens.add(group)
     return sorted(tokens)
 
-def ask_config(options):
+def ask_config(options, defaults):
     options.setdefault("use_separators", False)
     options.setdefault("leet_full", False)
     options.setdefault("max_ram", 3)
@@ -112,7 +112,9 @@ def ask_config(options):
     
     show_help()
     print(color_text("\n[ Sufijos/Prefijos por Defecto ]", COLOR_YELLOW))
-    print(color_text("Por defecto se usan: 123, 2026, 2025", COLOR_CYAN))
+    default_list = defaults.get("default_suffixes", ["123", "2026", "2025"])
+    default_str = ", ".join(default_list)
+    print(color_text(f"Por defecto se usan: {default_str}", COLOR_CYAN))
     print(color_text("Escribe los tuyos separados por coma para REEMPLAZARLOS. ¡Puedes usar letras/símbolos (ej: SH, PRO, !)!", COLOR_CYAN))
     print(color_text("Escribe 'ninguno' para no usar sufijos.", COLOR_CYAN))
     extra_anchors = input(color_text(">> Sufijos (ENTER = Mantener por defecto): ", COLOR_GREEN)).strip()
@@ -121,7 +123,7 @@ def ask_config(options):
     elif extra_anchors:
         options["digit_suffixes"] = parse_multi_values(extra_anchors)
     else:
-        options["digit_suffixes"] = ["123", "2026", "2025"]
+        options["digit_suffixes"] = default_list
 
     print(color_text("\n[ Ajustes Extra / Sobrescritura ]", COLOR_YELLOW))
     print(color_text("Para modificar o añadir algo extra, usa CLAVE=VALOR (Ej: Simbolos=Si Ram=4)", COLOR_CYAN))
@@ -219,7 +221,7 @@ def ask_config(options):
             return options
         elif choice == "r":
             print(color_text("\n  ♻ Volviendo a empezar...\n", COLOR_CYAN))
-            return ask_config()
+            return ask_config(options, defaults)
         else:
             print(color_text("  [!] Opción no válida. Pulsa ENTER para generar o escribe 'r' para reconfigurar.", COLOR_MAGENTA))
 
@@ -227,6 +229,9 @@ def main():
     parser = argparse.ArgumentParser(description="SELIC mini - Generador rápido")
     parser.add_argument("-p", "--pattern", help="Patrón avanzado (ej: #%?CO)")
     args = parser.parse_args()
+
+    # Cargar configuración global si existe
+    defaults = load_config("selic.cfg")
 
     print_mini_logo()
     
@@ -241,9 +246,10 @@ def main():
         
     print()
     while True:
-        min_len_input = input(color_text(">> Longitud mínima [4]: ", COLOR_GREEN)).strip()
+        def_min = defaults.get("min_length", 4)
+        min_len_input = input(color_text(f">> Longitud mínima [{def_min}]: ", COLOR_GREEN)).strip()
         if not min_len_input:
-            min_length = 4
+            min_length = int(def_min)
             break
         if min_len_input.isdigit() and int(min_len_input) > 0:
             min_length = int(min_len_input)
@@ -305,7 +311,7 @@ def main():
         "patterns": options_patterns
     }
     
-    options = ask_config(options)
+    options = ask_config(options, defaults)
 
     # Process numeric parts for digits
     numeric_parts = []
