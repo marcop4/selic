@@ -539,7 +539,7 @@ def prompt_interactive(defaults=None):
             if retry != "r":
                 params["base_dir"] = None
                 break
-    print_question("18", "¿Usar patrones avanzados? (#, %, @, ,, ?) [s/N]")
+    print_question("18", f"¿Usar patrones avanzados? (#, %, @, ,, ?) [{color_text('s/N', COLOR_GREEN)}]")
     print(f"    Ejemplos: {color_text('7###C', COLOR_ORANGE)}, {color_text('###@2026', COLOR_ORANGE)}, {color_text('Nombre##!', COLOR_ORANGE)}")
     print("    Cada marcador (#, %, @, ,, ?) es un marcador de posición que se reemplaza por un solo carácter.")
     print("    El patrón se completa carácter por carácter (estilo Crunch).")
