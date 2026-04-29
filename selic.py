@@ -515,14 +515,14 @@ def prompt_interactive(defaults=None):
     params["dict_file"] = None
     print_question("16", "Archivo de salida")
     default_output = defaults.get("output_file") or DEFAULT_OUTPUT_FILE
-    print(f"    ENTER = {color_text(default_output, COLOR_GREEN)}")
+    print(f"    ENTER = {color_text(default_output, COLOR_GREEN)} (Se añade .txt automáticamente)")
     params["output_file"] = input("    > ").strip() or default_output
     print_question("17", "Directorio base para los archivos")
     default_base = defaults.get("base_dir")
     if default_base is not None:
-        print(f"    ENTER = actual | predeterminado: {get_default_label(format_default_value(default_base))}")
+        print(f"    ENTER = actual (Se creará la carpeta 'wordlists') | predeterminado: {get_default_label(format_default_value(default_base))}")
     else:
-        print("    ENTER = actual")
+        print("    ENTER = Directorio actual (Se creará la carpeta 'wordlists' automáticamente)")
     print("    Ej: /home/kali/Documents o C:\\Users\\TuUsuario\\Documents")
     print("    Si el directorio no existe, podrás reintentar o usar el actual")
     while True:
