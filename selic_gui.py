@@ -623,14 +623,23 @@ class SelicGUI:
             total_est = estimate_wordlist_size(config, social_tokens)
             
             candidate_iterables = []
-            if config["patterns"]:
-                p_iter = generate_from_patterns(config["patterns"], char_pool, config["min_length"], config["max_length"])
-                candidate_iterables.append(p_iter)
             
-            # Inyectar variantes normales por capas según agresividad
-            agr = config.get("agresividad", 4)
-            for t in range(1, agr + 1):
-                candidate_iterables.append(generate_tiered_variants(social_tokens, options, tier=t))
+            # MODO QUIRÚRGICO: Si hay patrones, nos centramos SOLO en ellos
+            if config.get("patterns"):
+                # Para patrones usamos un char_pool que respete los ajustes (Leet, Mayúsculas, etc.)
+                # Usamos "all" para que el marcador # incluya las mutaciones pedidas
+                pattern_pool = build_char_pool("all", social_tokens, options)
+                p_iter = generate_from_patterns(config["patterns"], pattern_pool, config["min_length"], config["max_length"])
+                candidate_iterables.append(p_iter)
+            else:
+                # MODO AUTOMÁTICO: Si no hay patrones, usar generador normal por capas según agresividad
+                agr = config.get("agresividad", 4)
+                for t in range(1, agr + 1):
+                    candidate_iterables.append(generate_tiered_variants(social_tokens, options, tier=t))
+            
+            # SIEMPRE incluir contraseñas comunes (12345, etc.)
+            common_pwds = list(COMMON_PASSWORDS)
+            candidate_iterables.append(iter(common_pwds))
 
             progress_state = {"generated": 0, "current": ""}
             

@@ -575,7 +575,6 @@ def prompt_interactive(defaults=None):
         
         if patterns:
             params["patterns"] = patterns
-            params["hash_mode"] = "base"
         else:
             print(color_text("    [!] No ingresaste patrones. Continuando sin ellos...", COLOR_ORANGE))
             params["patterns"] = None
@@ -976,18 +975,21 @@ def main():
     output_file = config.get("output_file", DEFAULT_OUTPUT_FILE)
     candidate_iterables = []
     try:
-        if config.get("patterns"):
-            pattern_candidates = generate_from_patterns(
-                config.get("patterns"), char_pool,
-                config["min_length"], config["max_length"], config.get("count"),
-                max_expansion=options.get("max_template_expansion")
-            )
-            candidate_iterables.append(pattern_candidates)
-
-        if config.get("count") is None or True:
-            agr = config.get("agresividad", 4)
-            for t in range(1, agr + 1):
-                candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, config.get("count"), config["max_length"]))
+    if config.get("patterns"):
+        # Modo Quirúrgico: Patrones
+        # Usamos "all" para que el marcador # incluya mutaciones (Leet, Caps, etc) si están activas
+        pattern_pool = build_char_pool("all", base_tokens, options)
+        pattern_candidates = generate_from_patterns(
+            config.get("patterns"), pattern_pool,
+            config["min_length"], config["max_length"], config.get("count"),
+            max_expansion=options.get("max_template_expansion")
+        )
+        candidate_iterables.append(pattern_candidates)
+    else:
+        # Modo Automático: Capas (Tier 1-4)
+        agr = config.get("agresividad", 4)
+        for t in range(1, agr + 1):
+            candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, config.get("count"), config["max_length"]))
 
         if not config.get("patterns") and not config_has_social_info(config):
             print(color_text("No se proporcionó información de ingeniería social ni patrones. Se generará contenido básico desde el diccionario.", COLOR_MAGENTA))

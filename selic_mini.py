@@ -300,8 +300,7 @@ def main():
         "numeric_parts": [],
         "allow_extreme_generation": False,
         "extreme_generation_limit": 5000000000,
-        "patterns": options_patterns,
-        "hash_mode": "base" if options_patterns else "all"
+        "patterns": options_patterns
     }
     
     options = ask_config(options)
@@ -334,18 +333,17 @@ def main():
     start_time = time.time()
     candidate_iterables = []
     
-    # Inyectar Patrones si existen
-    char_pool = build_char_pool(options.get("hash_mode", "all"), base_tokens, options)
+    # MODO EXCLUSIVO
     if options.get("patterns"):
+        # Modo Quirúrgico: Patrones
+        # Usamos "all" para que el marcador # incluya las mutaciones pedidas
+        pattern_pool = build_char_pool("all", base_tokens, options)
         candidate_iterables.append(generate_from_patterns(
-            options["patterns"], char_pool, min_length, max_length
+            options["patterns"], pattern_pool, min_length, max_length
         ))
-
-    agr = options.get("agresividad", 4)
-    if agr == 4:
-        for t in range(1, 5):
-            candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, count_limit=None, max_length=max_length))
     else:
+        # Modo Automático: Capas (Tier 1-4)
+        agr = options.get("agresividad", 4)
         for t in range(1, agr + 1):
             candidate_iterables.append(generate_tiered_variants(base_tokens, options, t, count_limit=None, max_length=max_length))
     
