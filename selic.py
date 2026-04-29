@@ -239,7 +239,8 @@ def load_config_defaults(config_path):
             "digits": parse_config_bool(sec.get("digits"), True),
             "specials": parse_config_bool(sec.get("specials"), False),
             "leet": parse_config_bool(sec.get("leet"), True),
-            "digit_suffixes": parse_multi_values(sec.get("digit_suffixes")),
+            "digit_suffixes": (parse_multi_values(sec.get("default_suffixes", "123, 2026, 2025")) or []) + (parse_multi_values(sec.get("extra_suffixes")) or []),
+            "extra_common_passwords": parse_multi_values(sec.get("extra_common_passwords")),
             "decompose_numbers": parse_config_bool(sec.get("decompose_numbers"), False),
             "max_ram": parse_config_int(sec.get("max_ram"), 3),
             "max_template_expansion": parse_config_int(sec.get("max_template_expansion"), 100000000),
@@ -475,12 +476,19 @@ def prompt_interactive(defaults=None):
     print_question("12", f"¿Incluir dígitos automáticos (sufijos)? [{color_text('S/n', COLOR_GREEN)}]")
     params["digits"] = yes_no_input("    > ", default="s")
 
-    print_question("12-B", "Prefijos / Sufijos personalizados (Anclas)")
+    print_question("12-B", "Prefijos / Sufijos (Anclas)")
     print("    Escribe letras, números o símbolos que quieras pegar al inicio/final de CADA palabra.")
     print("    Ej: SH, PRO, !, 2025 (Separa con comas)")
-    print(f"    ENTER = {color_text('ninguno', COLOR_GREEN)}")
+    default_suf = defaults.get("digit_suffixes") or []
+    print(f"    Sufijos Base Configurados: {color_text(', '.join(default_suf), COLOR_GREEN)}")
+    print("    ENTER = Usar la lista Base | 'ninguno' = Borrar todos | O escribe para REEMPLAZAR la lista entera")
     extra_input = input("    > ").strip()
-    params["digit_suffixes"] = parse_multi_values(extra_input) if extra_input else None
+    if extra_input.lower() == "ninguno":
+        params["digit_suffixes"] = []
+    elif extra_input:
+        params["digit_suffixes"] = parse_multi_values(extra_input)
+    else:
+        params["digit_suffixes"] = default_suf
 
     print_question("13", f"¿Incluir caracteres especiales? [{color_text('s/N', COLOR_GREEN)}]")
     params["specials"] = yes_no_input("    > ", default="n")
@@ -642,6 +650,9 @@ def prompt_interactive(defaults=None):
     print_question("24", "RAM máxima para deduplicación (en GB) [3]:")
     params["max_ram"] = safe_int_input("    > ", 3, min_value=1, max_value=32)
     print("\nResumen rápido:")
+    print(f"  {color_text('Nombre:', COLOR_YELLOW)} {color_text(str(params.get('name') or '(vacío)'), COLOR_CYAN)}")
+    print(f"  {color_text('Nacimiento:', COLOR_YELLOW)} {color_text(str(params.get('birth_year') or '(vacío)'), COLOR_CYAN)}")
+    print(f"  {color_text('DNI:', COLOR_YELLOW)} {color_text(str(params.get('dni') or '(vacío)'), COLOR_CYAN)}")
     print(f"  {color_text('Salida:', COLOR_YELLOW)} {color_text(params['output_file'], COLOR_CYAN)}")
     if params.get("base_dir"):
         print(f"  {color_text('Base dir:', COLOR_YELLOW)} {color_text(params['base_dir'], COLOR_CYAN)}")
@@ -651,7 +662,8 @@ def prompt_interactive(defaults=None):
         print(f"  {color_text('Cantidad máxima:', COLOR_YELLOW)} {color_text(str(params['count']), COLOR_GREEN)}")
     else:
         print(f"  {color_text('Cantidad máxima:', COLOR_YELLOW)} {color_text('ilimitado', COLOR_GREEN)}")
-    if params["patterns"]:
+    print(f"  {color_text('Sufijos:', COLOR_YELLOW)} {color_text(', '.join(params.get('digit_suffixes') or []) or '(ninguno)', COLOR_GREEN)}")
+    if params.get("patterns"):
         print(f"  {color_text('Patrones:', COLOR_YELLOW)} {color_text(', '.join(params['patterns']), COLOR_ORANGE)}")
     print(f"  {color_text('Modo leet:', COLOR_YELLOW)} {color_text('Sí' if params.get('leet') else 'No', COLOR_GREEN if params.get('leet') else COLOR_ORANGE)}")
     print(f"  {color_text('Separadores:', COLOR_YELLOW)} {color_text('Sí' if params.get('use_separators') else 'No', COLOR_GREEN if params.get('use_separators') else COLOR_ORANGE)}")
@@ -665,9 +677,17 @@ def prompt_interactive(defaults=None):
     print(f"  {color_text('Agresividad:', COLOR_YELLOW)} {color_text(str(params.get('agresividad', 4)), COLOR_GREEN)}")
     print(f"  {color_text('Mezcla:', COLOR_YELLOW)} {color_text(str(params.get('mezcla', 'auto')), COLOR_GREEN)}")
     print(f"  {color_text('RAM dedup:', COLOR_YELLOW)} {color_text(str(params.get('max_ram', 3)) + ' GB', COLOR_GREEN)}")
-    print("Pulsa ENTER si quieres continuar con la generación...")
-    input("")
-    return params
+    print()
+    while True:
+        print(f"  {color_text('ENTER', COLOR_GREEN)} = Generar  |  {color_text('R', COLOR_ORANGE)} = Reiniciar configuración")
+        choice = input("  > ").strip().lower()
+        if choice == "":
+            return params
+        elif choice == "r":
+            print(color_text("\n  ♻ Reiniciando configuración (tus respuestas anteriores se mantienen como defaults)...\n", COLOR_CYAN))
+            return prompt_interactive(defaults=params)
+        else:
+            print(color_text("  [!] Opción no válida. Pulsa ENTER para generar o escribe 'r' para reconfigurar.", COLOR_MAGENTA))
 
 
 def yes_no_input(prompt, default="n"):
@@ -967,7 +987,10 @@ def main():
             candidate_iterables.append((word for word in dictionary_words))
 
         # Contraseñas comunes estáticas (sin combinar, solo se agregan tal cual)
-        candidate_iterables.append(iter(COMMON_PASSWORDS))
+        common_pwds = list(COMMON_PASSWORDS)
+        if config.get("extra_common_passwords"):
+            common_pwds.extend(config["extra_common_passwords"])
+        candidate_iterables.append(iter(common_pwds))
 
         max_ram = config.get("max_ram", 3)
         written = stream_candidates_to_file(

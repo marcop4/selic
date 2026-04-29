@@ -22,7 +22,7 @@ except (AttributeError, OSError):
 
 DEFAULT_SPECIALS = "!@#$%^&*_+-="
 DEFAULT_DIGITS = "0123456789"
-DEFAULT_DIGIT_SUFFIXES = ["123", "2023", "2024", "007"]
+DEFAULT_DIGIT_SUFFIXES = ["123", "2026", "2025"]
 DEFAULT_LOWER = "abcdefghijklmnñopqrstuvwxyz"
 DEFAULT_UPPER = DEFAULT_LOWER.upper()
 COLOR_BLUE = "\033[38;5;33m"
@@ -342,9 +342,10 @@ def _case_variants(token, options):
     return {v for v in variants if v}
 
 def _generate_token_variants(base, options, max_length):
-    suffixes = list(DEFAULT_DIGIT_SUFFIXES)
-    custom_digits = options.get("digit_suffixes") or []
-    suffixes.extend([re.sub(r"[\-/\._\\\s]", "", str(d)) for d in custom_digits if d])
+    custom_digits = options.get("digit_suffixes")
+    if custom_digits is None:
+        custom_digits = DEFAULT_DIGIT_SUFFIXES
+    suffixes = [re.sub(r"[\-/\._\\\s]", "", str(d)) for d in custom_digits if d]
     birth_years = options.get("birth_year")
     if birth_years:
         if isinstance(birth_years, list):
@@ -406,8 +407,6 @@ def _generate_token_variants(base, options, max_length):
         if options.get("complexity", 2) >= 4:
             if len(variant) + 1 <= max_length:
                 yield f"{variant}!"
-            if len(variant) + 4 <= max_length:
-                yield f"{variant}2024"
 
         if options.get("complexity", 2) >= 5 and options.get("digits") and options.get("specials"):
             for num in suffixes:
@@ -455,7 +454,10 @@ def estimate_passwords(num_tokens, max_combo, options):
     estimated = base_perms
     
     # Sufijos numéricos
-    suffix_count = len(DEFAULT_DIGIT_SUFFIXES) + len(options.get("numeric_parts", []))
+    custom_digits = options.get("digit_suffixes")
+    if custom_digits is None:
+        custom_digits = DEFAULT_DIGIT_SUFFIXES
+    suffix_count = len(custom_digits) + len(options.get("numeric_parts", []))
     digit_mult = 1
     if options.get("digits"):
         digit_mult = 1 + suffix_count * 2  # post + pre
@@ -708,9 +710,10 @@ def generate_tiered_variants(tokens, options, tier, count_limit=None, max_length
         return
 
     # Ingredientes
-    suffixes = list(DEFAULT_DIGIT_SUFFIXES)
-    custom_digits = options.get("digit_suffixes") or []
-    suffixes.extend([re.sub(r"[\-/\._\\\s]", "", str(d)) for d in custom_digits if d])
+    custom_digits = options.get("digit_suffixes")
+    if custom_digits is None:
+        custom_digits = DEFAULT_DIGIT_SUFFIXES
+    suffixes = [re.sub(r"[\-/\._\\\s]", "", str(d)) for d in custom_digits if d]
     birth_years = options.get("birth_year")
     if birth_years:
         if isinstance(birth_years, list):
@@ -835,7 +838,7 @@ def generate_tiered_variants(tokens, options, tier, count_limit=None, max_length
             if use_digits:
                 # Sufijos comunes + sufijos específicos del objetivo
                 target_suffixes = (suffixes[:10] if suffixes else [])
-                for num in (["123", "2024", "2025"] + target_suffixes):
+                for num in target_suffixes:
                     c4 = f"{t1}{t2}{num}"
                     if len(c4) <= max_length:
                         yield c4; yielded += 1

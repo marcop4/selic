@@ -116,11 +116,17 @@ def ask_config(options):
     print(color_text("💡 Tip Hacker: ¿Quieres contraseñas largas (4 palabras juntas) pero sin letras raras?", COLOR_MAGENTA))
     print(color_text("   Elige Nivel 4 y aquí escribe: Leet=No LeetFull=No", COLOR_MAGENTA))
     
-    print(color_text("\n[ Sufijos/Prefijos personalizados (Anclas) ]", COLOR_YELLOW))
-    print(color_text("Escribe lo que quieras pegar a CADA palabra (Ej: SH, !, 2025).", COLOR_CYAN))
-    extra_anchors = input(color_text(">> Anclas (ENTER = ninguna): ", COLOR_GREEN)).strip()
-    if extra_anchors:
+    print(color_text("\n[ Sufijos/Prefijos por Defecto ]", COLOR_YELLOW))
+    print(color_text("Por defecto se usan: 123, 2026, 2025", COLOR_CYAN))
+    print(color_text("Escribe los tuyos separados por coma para REEMPLAZARLOS. ¡Puedes usar letras/símbolos (ej: SH, PRO, !)!", COLOR_CYAN))
+    print(color_text("Escribe 'ninguno' para no usar sufijos.", COLOR_CYAN))
+    extra_anchors = input(color_text(">> Sufijos (ENTER = Mantener por defecto): ", COLOR_GREEN)).strip()
+    if extra_anchors.lower() == "ninguno":
+        options["digit_suffixes"] = []
+    elif extra_anchors:
         options["digit_suffixes"] = parse_multi_values(extra_anchors)
+    else:
+        options["digit_suffixes"] = ["123", "2026", "2025"]
 
     while True:
         config_input = input(color_text(">> Ajustes (ENTER para continuar con defaults): ", COLOR_GREEN)).strip()
@@ -200,8 +206,19 @@ def ask_config(options):
             break
             
     print(color_text(f"[*] Configuración Final: \n    {get_summary()}", COLOR_CYAN))
+    sufijos = options.get("digit_suffixes", [])
+    print(color_text(f"    Sufijos: {', '.join(sufijos) if sufijos else '(ninguno)'}", COLOR_CYAN))
     print()
-    return options
+    while True:
+        print(color_text(f"  ENTER = Generar  |  R = Volver a empezar", COLOR_YELLOW))
+        choice = input(color_text("  > ", COLOR_GREEN)).strip().lower()
+        if choice == "":
+            return options
+        elif choice == "r":
+            print(color_text("\n  ♻ Volviendo a empezar...\n", COLOR_CYAN))
+            return ask_config()
+        else:
+            print(color_text("  [!] Opción no válida. Pulsa ENTER para generar o escribe 'r' para reconfigurar.", COLOR_MAGENTA))
 
 def main():
     parser = argparse.ArgumentParser(description="SELIC mini - Generador rápido")

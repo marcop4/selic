@@ -3,21 +3,18 @@
 
 SELIC es un motor de ingeniería social avanzado diseñado para penetrar defensas basadas en la psicología del usuario. A diferencia de los generadores aleatorios, SELIC analiza los datos del objetivo y recomienda el nivel de ataque óptimo mediante un sistema de **Diagnóstico Dinámico**.
 
-### 🌟 Novedades de la v1.2.0-BETA:
-- **Diagnóstico Asistido**: El sistema detecta automáticamente la "Gravedad" de tu ataque y te sugiere el mejor nivel de agresividad.
-- **Medidor de Gravedad Visual (GUI)**: Nueva interfaz Cyber-Dark con indicador de 4 bloques de colores (Verde -> Rojo).
-- **Potencia Universal**: Ahora el modo Mini, el CLI normal y la GUI comparten el mismo motor de Patrones Avanzados y lógica de mezcla.
-- **Estándar Profesional**: Implementación de flujos interactivos con valores predeterminados inteligentes `[S/n]`.
-
----
-
-## 🌟 Novedades en la Versión 1.2.0
-Esta versión marca un hito en la evolución de SELIC, pasando de un script único a una **arquitectura modular de alto rendimiento**.
+## 🌟 Novedades en la Versión 1.2.0 Oficial
+Esta versión marca un hito en la evolución de SELIC, pasando de un script único a una **arquitectura modular de alto rendimiento** e incorporando las siguientes novedades:
 
 *   **🧠 Motor Heurístico Pro (Core):** Nueva lógica que identifica patrones de redundancia (`adminadmin`), iniciales inteligentes (`J.Diaz`) y símbolos dobles.
-*   **🛡️ Blindaje de Hardware:** Sistemas de seguridad integrados para proteger la integridad de tu disco y sistema operativo.
+*   **🛡️ Blindaje de Hardware:** Sistemas de seguridad integrados (Sensor de espacio en disco, Freno Absurdo y Pánico de 5GB) para proteger la integridad de tu disco y sistema operativo.
 *   **⚡ Arquitectura Modular:** Separación de la lógica de generación (`selic_core.py`) de las interfaces de usuario.
 *   **📊 Estimador Pro-Activo:** Cálculo real del tamaño del wordlist antes de iniciar la generación.
+*   **✨ Sufijos Dinámicos**: Los sufijos (`123, 2026, 2025`) ahora se gestionan desde `selic.cfg`. Puedes cambiarlos, ampliarlos o desactivarlos escribiendo `ninguno`.
+*   **🛡️ Contraseñas Comunes Extra**: Nueva variable `extra_common_passwords` en `selic.cfg` para ampliar la lista interna sin tocar código.
+*   **🛠️ Patrones Documentados**: El botón `[?]` ahora explica texto fijo, escape con `\`, múltiples patrones y el estilo Crunch.
+*   **✅ Resumen de Confirmación**: Las 3 interfaces (CLI, Mini, GUI) muestran un resumen completo antes de generar, con opción de reiniciar la configuración.
+*   **🎨 Mejoras Visuales GUI**: Nueva interfaz Cyber-Dark, diálogos de confirmación oscuros personalizados, y validaciones reforzadas.
 
 ---
 
@@ -59,9 +56,12 @@ SELIC 1.2.0 es el primer generador que se preocupa por la salud de tu equipo:
 
 ## ⚙️ Configuración Personalizada (`selic.cfg`)
 Puedes ajustar el comportamiento del motor editando el archivo de configuración:
+*   `default_suffixes`: Sufijos base que se usan por defecto (ej: `123, 2026, 2025`).
+*   `extra_suffixes`: Sufijos adicionales para ataques específicos (se suman a los base).
+*   `extra_common_passwords`: Contraseñas comunes extra añadidas a la lista interna.
 *   `max_ram`: Límite de memoria para procesamiento de duplicados.
 *   `allow_extreme_generation`: Bypass para el freno de seguridad.
-*   `leet_mappings`: Personalización de las reglas de sustitución.
+*   `[leet]`: Personalización de las reglas de sustitución Leet Speak.
 
 ---
 
