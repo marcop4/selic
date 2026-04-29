@@ -543,6 +543,7 @@ class SelicGUI:
     def browse_output(self):
         os.makedirs("wordlists", exist_ok=True)
         f = filedialog.asksaveasfilename(defaultextension=".txt", 
+                                        filetypes=[("Archivos de texto", "*.txt"), ("Todos los archivos", "*.*")],
                                         initialfile="passlist_gui.txt",
                                         initialdir=os.path.abspath("wordlists"),
                                         title="Seleccionar destino de la wordlist")
