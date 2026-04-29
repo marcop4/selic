@@ -111,11 +111,6 @@ def ask_config(options):
         print(color_text(f"  Ram={options['max_ram']}              GB maximos para deduplicacion en memoria", COLOR_CYAN))
     
     show_help()
-    print(color_text("\n[ Ajustes Extra / Sobrescritura ]", COLOR_YELLOW))
-    print(color_text("Para modificar o añadir algo extra, usa CLAVE=VALOR (Ej: Simbolos=Si Ram=4)", COLOR_CYAN))
-    print(color_text("💡 Tip Hacker: ¿Quieres contraseñas largas (4 palabras juntas) pero sin letras raras?", COLOR_MAGENTA))
-    print(color_text("   Elige Nivel 4 y aquí escribe: Leet=No LeetFull=No", COLOR_MAGENTA))
-    
     print(color_text("\n[ Sufijos/Prefijos por Defecto ]", COLOR_YELLOW))
     print(color_text("Por defecto se usan: 123, 2026, 2025", COLOR_CYAN))
     print(color_text("Escribe los tuyos separados por coma para REEMPLAZARLOS. ¡Puedes usar letras/símbolos (ej: SH, PRO, !)!", COLOR_CYAN))
@@ -127,6 +122,11 @@ def ask_config(options):
         options["digit_suffixes"] = parse_multi_values(extra_anchors)
     else:
         options["digit_suffixes"] = ["123", "2026", "2025"]
+
+    print(color_text("\n[ Ajustes Extra / Sobrescritura ]", COLOR_YELLOW))
+    print(color_text("Para modificar o añadir algo extra, usa CLAVE=VALOR (Ej: Simbolos=Si Ram=4)", COLOR_CYAN))
+    print(color_text("💡 Tip Hacker: ¿Quieres contraseñas largas (4 palabras juntas) pero sin letras raras?", COLOR_MAGENTA))
+    print(color_text("   Elige Nivel 4 y aquí escribe: Leet=No LeetFull=No", COLOR_MAGENTA))
 
     while True:
         config_input = input(color_text(">> Ajustes (ENTER para continuar con defaults): ", COLOR_GREEN)).strip()
