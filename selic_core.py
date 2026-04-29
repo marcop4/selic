@@ -1189,6 +1189,11 @@ def stream_candidates_to_file(file_path, candidate_iterables, min_length, max_le
     skipped_duplicates = 0
     stats = {"alpha": 0, "alnum": 0, "symbols": 0, "lengths": {}}
     try:
+        # Asegurar que el directorio de salida existe
+        output_dir = os.path.dirname(file_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            
         with open(file_path, "w", encoding="utf-8") as f:
             for iterable in candidate_iterables:
                 for candidate in iterable:
