@@ -481,7 +481,7 @@ def prompt_interactive(defaults=None):
     print("    Ej: SH, PRO, !, 2025 (Separa con comas)")
     default_suf = defaults.get("digit_suffixes") or []
     print(f"    Sufijos Base Configurados: {color_text(', '.join(default_suf), COLOR_GREEN)}")
-    print("    ENTER = Usar la lista Base | 'ninguno' = Borrar todos | O escribe para REEMPLAZAR la lista entera")
+    print("    ENTER = Usar la lista Base | 'ninguno' = Borrar todos | o escribe sufijos manualmente para REEMPLAZAR la lista entera")
     extra_input = input("    > ").strip()
     if extra_input.lower() == "ninguno":
         params["digit_suffixes"] = []
